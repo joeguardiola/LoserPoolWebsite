@@ -47,12 +47,16 @@ final class SeasonConfigTest extends TestCase
     }
 
     /*
-     * Saturday must never join the blocked list: 2026 week 18 is played
-     * entirely on Saturday, so blocking it leaves nobody able to pick.
+     * Every day before the 11:59 p.m. Saturday deadline is blocked, Saturday
+     * included. Blocking Saturday costs the pool week 18, which is played
+     * entirely on Saturday in 2026 -- an accepted cost, recorded here and on
+     * the constant itself so it is not quietly reverted as a bug fix.
      */
-    public function testSaturdayIsNeverBlocked(): void
+    public function testEveryDayBeforeTheDeadlineIsBlocked(): void
     {
-        $this->assertNotContains('Sat', SeasonConfig::BLOCKED_KICKOFF_DAYS);
-        $this->assertContains('Thu', SeasonConfig::BLOCKED_KICKOFF_DAYS);
+        $this->assertSame(
+            ['Wed', 'Thu', 'Fri', 'Sat'],
+            SeasonConfig::BLOCKED_KICKOFF_DAYS
+        );
     }
 }

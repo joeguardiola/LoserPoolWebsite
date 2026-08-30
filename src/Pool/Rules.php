@@ -24,10 +24,12 @@ final class Rules
      *   - teams whose game kicks off before the pick deadline.
      *
      * The second rule is expressed as a list of weekday abbreviations rather
-     * than "before Sunday". That distinction is load-bearing: the 2026 opener
-     * is a Wednesday game, and week 18 is played entirely on Saturday -- a
-     * "block anything before Sunday" rule would have made week 18 unpickable
-     * for all 32 teams.
+     * than a comparison against the deadline, because the 2026 opener is a
+     * Wednesday game and a naive "no Thursday games" check misses it.
+     *
+     * The list now includes Saturday, which makes 2026 week 18 -- a
+     * Saturday-only slate -- unpickable for all 32 teams. See
+     * SeasonConfig::BLOCKED_KICKOFF_DAYS: that is a decision, not an oversight.
      *
      * A schedule we could not load blocks nothing. Silently blocking every
      * team would look identical to a bye week and would quietly break picking;
