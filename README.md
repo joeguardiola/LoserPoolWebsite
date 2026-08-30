@@ -110,6 +110,21 @@ flyctl deploy --remote-only
 One machine with SQLite on a mounted volume. **SQLite pins this to a single
 machine** - a volume attaches to one machine, so do not scale past one.
 
+### Knowing when it is broken
+
+The failure that matters here is not the site going down. It is ESPN refusing
+the request: the site falls back to committed snapshots, serves every page
+correctly, and results silently stop updating for the rest of the season. That
+has happened before, and nobody noticed, because nothing looked wrong.
+
+`/health.php` detects it. `.github/workflows/health.yml` reads it once a day and
+fails the job if it does not say `Status OK`, which mails whoever owns the
+repository.
+
+`health.php` returns 200 even when it reports a problem, on purpose. Returning
+503 would make Fly's own check mark the machine unhealthy and stop routing to
+it, taking the site down over a degradation it is designed to survive.
+
 ### Backups
 
 Two layers, because they fail differently.

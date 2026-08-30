@@ -1,0 +1,44 @@
+name: health
+
+# Watches for the failure this pool cannot see from the inside.
+#
+# When ESPN starts refusing the request, the site does not break. It falls back
+# to committed snapshots and serves every page correctly -- while results stop
+# updating for the rest of the season. That has happened here before, and it
+# went unnoticed because nothing looked wrong.
+#
+# health.php already detects it. What was missing is anybody reading the answer:
+# it returns 200 whatever it finds, so Fly's own check passes either way, and it
+# was only ever looked at during a deploy.
+#
+# Deliberately still 200. Returning 503 would make Fly consider the machine
+# unhealthy and stop routing to it, taking the site down over a degradation it
+# is specifically designed to survive. Failing this job instead sends mail to
+# whoever owns the repository, which is the person who can act on it.
+on:
+  schedule:
+    # 14:00 UTC daily. Monday afternoon in the pool's timezone is when a
+    # results problem from the weekend matters most and is still fixable.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: health
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      # The app scales to zero. The first request wakes it, and a cold start
+      # can outrun a short timeout, so this is generous rather than clever.
+      - name: Ask the site how it is
+        run: |
+          body=$(curl -sS --max-time 90 https://loser-pool-2026.fly.dev/health.php)
+          echo "$body"
+          echo "$body" | grep -q "Status         OK" || {
+            echo
+            echo "::error::The pool reports a problem. The site is probably still serving pages;"
+            echo "::error::that is the point. Read the Problems section above."
+            exit 1
+          }
