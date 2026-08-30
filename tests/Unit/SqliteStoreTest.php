@@ -249,4 +249,113 @@ final class SqliteStoreTest extends TestCase
         $this->assertSame([], $nextSeason->allUsernames());
         $this->assertFalse($nextSeason->userExists('joeg'));
     }
+
+    /*
+     * The season that has already happened, replayed.
+     *
+     * A database created before PINs were hashed goes through
+     * migratePlaintextPins() on the next open, and that migration renames the
+     * users table out of the way. Since SQLite 3.25 a rename rewrites
+     * references to that table inside every OTHER table's foreign keys, so the
+     * picks table quietly ended up pointing at Users_26_old, which the
+     * migration then dropped. With foreign_keys ON, which this store sets,
+     * every pick from then on failed its foreign key check and the site
+     * answered "Database error" -- while registering, reading and every other
+     * page worked perfectly.
+     *
+     * Nothing caught it because every test builds a fresh database from the
+     * current schema, and a fresh database never takes this path. This one
+     * builds the old one on purpose.
+     */
+    public function testAPickCanStillBeSavedAfterThePinMigration(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('PRAGMA foreign_keys = ON');
+
+        /* The schema as it stood before PINs were hashed. */
+        $pdo->exec("CREATE TABLE Users_26 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            pin TEXT NOT NULL
+        )");
+        $pdo->exec("CREATE TABLE Picks_26 (
+            pickid INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL COLLATE NOCASE,
+            week_number INTEGER NOT NULL,
+            pick TEXT NOT NULL,
+            UNIQUE (username, week_number),
+            FOREIGN KEY (username) REFERENCES Users_26(username)
+        )");
+        $pdo->exec("CREATE TABLE Buybacks_26 (
+            username TEXT PRIMARY KEY COLLATE NOCASE,
+            FOREIGN KEY (username) REFERENCES Users_26(username)
+        )");
+        $pdo->exec("INSERT INTO Users_26 (name, email, username, pin)
+                    VALUES ('Joe G', 'joe@example.com', 'joeg', '1234')");
+
+        $store = new SqliteStore($pdo, '26');
+
+        $this->assertTrue($store->verifyPin('joeg', '1234'), 'the migration rehashed the old PIN');
+        $this->assertSame(PoolStore::OK, $store->savePick('joeg', 'Chicago Bears', 1), 'a pick saves');
+        $this->assertSame([1 => 'Chicago Bears'], $store->picksFor('joeg'));
+        $this->assertSame(PoolStore::OK, $store->grantBuyback('joeg'), 'a buy-back records');
+
+        foreach (['Picks_26', 'Buybacks_26'] as $table) {
+            $sql = (string) $pdo
+                ->query("SELECT sql FROM sqlite_master WHERE name = '$table'")
+                ->fetchColumn();
+            $this->assertStringNotContainsString('_old', $sql, "$table references a table that exists");
+        }
+    }
+
+    /* Rows already recorded survive the repair. */
+    public function testRepairingTheForeignKeyKeepsThePicksThatWereThere(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        /*
+         * Off while the damaged state is built, because that is the order it
+         * happened in: the picks were recorded against a working foreign key,
+         * and the migration broke the key afterwards. It goes on before the
+         * store opens, which is what SqliteStore::open() does and what makes
+         * the dangling key bite.
+         */
+        $pdo->exec('PRAGMA foreign_keys = OFF');
+
+        $pdo->exec("CREATE TABLE Users_26 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL,
+            username TEXT NOT NULL UNIQUE COLLATE NOCASE, pin_hash TEXT NOT NULL
+        )");
+        /* Damaged in exactly the way production was. */
+        $pdo->exec("CREATE TABLE Picks_26 (
+            pickid INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL COLLATE NOCASE,
+            week_number INTEGER NOT NULL,
+            pick TEXT NOT NULL,
+            UNIQUE (username, week_number),
+            FOREIGN KEY (username) REFERENCES \"Users_26_old\"(username)
+        )");
+        $pdo->exec("CREATE TABLE Buybacks_26 (
+            username TEXT PRIMARY KEY COLLATE NOCASE,
+            FOREIGN KEY (username) REFERENCES \"Users_26_old\"(username)
+        )");
+        $pdo->exec("INSERT INTO Users_26 (name, email, username, pin_hash)
+                    VALUES ('Joe G', 'joe@example.com', 'joeg', '" . password_hash('1234', PASSWORD_DEFAULT) . "')");
+        $pdo->exec("INSERT INTO Picks_26 (username, week_number, pick)
+                    VALUES ('joeg', 1, 'Chicago Bears'), ('joeg', 2, 'Denver Broncos')");
+
+        $pdo->exec('PRAGMA foreign_keys = ON');
+
+        $store = new SqliteStore($pdo, '26');
+
+        $this->assertSame(
+            [1 => 'Chicago Bears', 2 => 'Denver Broncos'],
+            $store->picksFor('joeg'),
+            'the rows already there are kept'
+        );
+        $this->assertSame(PoolStore::OK, $store->savePick('joeg', 'Detroit Lions', 3), 'and new ones save');
+    }
 }
