@@ -13,14 +13,20 @@ is underway. They are enforced in `src/Pool/`.
 - **A tie eliminates.** A team that tied did not lose. ESPN encodes a tie as
   `winner: false` on *both* competitors, so the obvious check — "was this team
   the winner?" — scores a tie as a successful pick.
-- **Teams playing Wednesday, Thursday or Friday cannot be picked.**
-  **Saturday is pickable.** Both halves are load-bearing: the 2026 opener is a
-  *Wednesday* game, so "no Thursday games" misses it; and 2026 week 18 is played
-  entirely on Saturday, so "nothing before Sunday" blocks all 32 teams and makes
-  the final week unpickable.
+- **Teams playing Wednesday, Thursday, Friday or Saturday cannot be picked** —
+  their games start before the deadline. The list is weekdays, not "anything
+  before Sunday", because the 2026 opener is a *Wednesday* game and a literal
+  "no Thursday games" check misses it.
+- **Blocking Saturday costs the pool week 18, deliberately.** 2026 week 18 is
+  played entirely on Saturday, so every one of the 32 teams is unpickable and
+  nobody can submit a week 18 pick through the site. The commissioner chose
+  this over leaving a hole where a player could watch a Saturday team lose and
+  then pick it before the Saturday night deadline. Week 18 is settled off-site.
+  Do not "fix" it by dropping `'Sat'` from `BLOCKED_KICKOFF_DAYS`.
 - Bye teams cannot be picked.
-- Picks open Tuesday–Saturday, lock Sunday and Monday. Other players' current
-  week picks stay hidden until lock.
+- Picks are due **11:59 p.m. Central Saturday**; the lock itself falls at 00:00
+  Sunday and lifts 00:00 Tuesday, so the published time is a minute early on
+  purpose. Other players' current week picks stay hidden until lock.
 - **Buy back in: week 1 only.** Recorded with `bin/buyback.php`, never inferred
   — an eliminated player can still submit picks, so continued play proves
   nothing.
