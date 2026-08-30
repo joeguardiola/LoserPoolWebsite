@@ -24,10 +24,21 @@ final class SeasonConfig
 
     /*
      * Teams playing on these days cannot be picked, because their games start
-     * before the pick deadline. Saturday is deliberately absent: late-season
-     * Saturday slates are pickable, and in 2026 week 18 is Saturday-only.
+     * before the pick deadline of 11:59 p.m. Saturday.
+     *
+     * Saturday is on this list by an explicit commissioner decision, and it
+     * costs the pool week 18. Saturday games kick off hours before a Saturday
+     * night deadline, so leaving them pickable let a player watch a team lose
+     * and then pick it -- the same hole the Wed/Thu/Fri entries close.
+     *
+     * The price: 2026 week 18 is played entirely on Saturday (16 games, all 32
+     * teams). Under this list every team in that week is unpickable, so no
+     * player can submit a week 18 pick and the pool cannot play its final week
+     * through the site. That is known and accepted; week 18 is the
+     * commissioner's to settle off-site. Do not "fix" it by quietly dropping
+     * Saturday from this list.
      */
-    public const BLOCKED_KICKOFF_DAYS = ['Wed', 'Thu', 'Fri'];
+    public const BLOCKED_KICKOFF_DAYS = ['Wed', 'Thu', 'Fri', 'Sat'];
 
     public const REGULAR_SEASON_WEEKS = 18;
 

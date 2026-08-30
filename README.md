@@ -9,10 +9,14 @@ Live: <https://loser-pool-2026.fly.dev>
 - Pick one team per week that you think will lose. **No repeat picks** all season.
 - **A tie eliminates you.** You must pick a team that loses, and a team that
   ties did not lose.
-- **Teams playing Wednesday, Thursday or Friday cannot be picked** — their games
-  start before the deadline. **Saturday games are pickable.**
+- **Teams playing Wednesday, Thursday, Friday or Saturday cannot be picked** —
+  their games start before the deadline.
 - Teams on a bye cannot be picked.
-- Picks are open Tuesday through Saturday, and lock Sunday and Monday.
+- Picks are due by **11:59 p.m. Central on Saturday**. They stay locked Sunday
+  and Monday, and reopen Tuesday.
+- **2026 week 18 cannot be played through the site.** It is a Saturday-only
+  slate, so every team is unpickable. The commissioner settles the final week
+  off-site.
 - Other players' picks for the current week stay hidden until the slate starts.
 - **Buy back in: week 1 only.** Recorded with `bin/buyback.php`, since an
   eliminated player can still submit picks — continuing to play does not show

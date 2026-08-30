@@ -174,7 +174,7 @@ function lp_registration_is_open(): bool
 
 /*
  * Teams that cannot be picked this week: byes, plus teams playing before the
- * deadline (Wed/Thu/Fri). Saturday games are pickable.
+ * 11:59 p.m. Saturday deadline (Wed/Thu/Fri/Sat).
  */
 function get_INELIGIBLE_teams($week): array
 {

@@ -14,24 +14,35 @@ use PHPUnit\Framework\TestCase;
  */
 final class RulesTest extends TestCase
 {
-    private const BLOCKED_DAYS = ['Wed', 'Thu', 'Fri'];
+    /*
+     * Track the live configuration rather than a copy of it. These cases exist
+     * to pin down what the pool actually does, and a private duplicate would
+     * keep passing after SeasonConfig changed underneath them.
+     */
+    private const BLOCKED_DAYS = SeasonConfig::BLOCKED_KICKOFF_DAYS;
 
     /*
-     * The rule that a naive reading gets wrong.
+     * The known cost of blocking Saturday, asserted rather than discovered.
      *
-     * 2026 week 18 is played entirely on Saturday. Expressing the deadline as
-     * "nothing before Sunday" would mark all 32 teams ineligible and make the
-     * final week unpickable for everyone. Saturday games are pickable.
+     * 2026 week 18 is played entirely on Saturday, so blocking Saturday leaves
+     * every one of the 32 teams unpickable and no player able to submit a week
+     * 18 pick. This is a deliberate commissioner decision, not a defect: the
+     * pick deadline is 11:59 p.m. Saturday, and a Saturday kickoff is hours
+     * before it.
+     *
+     * The test exists so the consequence is visible in the suite instead of
+     * being found in January. If it starts failing, the rule changed -- decide
+     * whether that was intended before editing this expectation.
      */
-    public function testSaturdayOnlyWeekLeavesEveryTeamPickable(): void
+    public function testSaturdayOnlyWeekLeavesNobodyAbleToPick(): void
     {
         $schedule = FixtureLoader::schedule('2026-w18');
 
         $this->assertCount(16, $schedule->games());
-        $this->assertSame(
-            [],
+        $this->assertCount(
+            32,
             Rules::ineligibleTeams($schedule, Teams::all(), self::BLOCKED_DAYS),
-            'Week 18 is Saturday-only; blocking it would leave nobody able to pick.'
+            'Week 18 is Saturday-only, so blocking Saturday blocks the whole week.'
         );
     }
 
@@ -59,8 +70,8 @@ final class RulesTest extends TestCase
         $this->assertNotContains('Denver Broncos', $ineligible);
     }
 
-    /* Friday games are blocked while Saturday games in the same week are not. */
-    public function testFridayIsBlockedButSaturdayIsNotInTheSameWeek(): void
+    /* Friday and Saturday games are both blocked; Sunday and Monday are not. */
+    public function testFridayAndSaturdayAreBothBlockedInTheSameWeek(): void
     {
         $ineligible = Rules::ineligibleTeams(
             FixtureLoader::schedule('2026-w16'),
@@ -68,14 +79,16 @@ final class RulesTest extends TestCase
             self::BLOCKED_DAYS
         );
 
-        $this->assertCount(8, $ineligible);
+        /* Week 16: one Thursday, three Friday and four Saturday games. */
+        $this->assertCount(16, $ineligible);
         foreach (['Philadelphia Eagles', 'Houston Texans', 'Chicago Bears', 'Green Bay Packers'] as $blocked) {
             $this->assertContains($blocked, $ineligible);
         }
-        /* Saturday teams that week remain pickable. */
-        foreach (['Atlanta Falcons', 'Tampa Bay Buccaneers', 'Pittsburgh Steelers', 'Carolina Panthers'] as $allowed) {
-            $this->assertNotContains($allowed, $ineligible);
+        foreach (['Atlanta Falcons', 'Tampa Bay Buccaneers', 'Pittsburgh Steelers', 'Carolina Panthers'] as $blocked) {
+            $this->assertContains($blocked, $ineligible, 'Saturday kickoffs are before the deadline.');
         }
+        /* The Sunday and Monday slates are still the pickable half of the week. */
+        $this->assertNotSame(Teams::all(), $ineligible);
     }
 
     public function testByeTeamsAreBlockedAlongsideEarlyKickoffs(): void
