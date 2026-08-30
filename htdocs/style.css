@@ -351,6 +351,22 @@ label {
     margin-top: var(--sp-4);
 }
 
+/*
+ * The weekly deadline, stated where the pick is made. Toned rather than
+ * alarming: it is true every week, so it must not read as an error.
+ */
+.deadline-note {
+    margin: 0 0 var(--sp-5);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--text);
+}
+
 /* 16px is not stylistic: iOS zooms the viewport on a smaller focused input. */
 input,
 select,
