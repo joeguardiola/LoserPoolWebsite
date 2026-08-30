@@ -37,6 +37,7 @@ final class SqliteStore implements PoolStore
         $this->buybackTable = 'Buybacks_' . $seasonSuffix;
         $this->createTables();
         $this->migratePlaintextPins();
+        $this->repairForeignKeysLeftDangling();
     }
 
     /* Opens (and creates) a database file, or ':memory:' for tests. */
@@ -102,7 +103,24 @@ final class SqliteStore implements PoolStore
 
         $existing = $this->pdo->query("SELECT * FROM {$this->userTable}")->fetchAll(PDO::FETCH_ASSOC);
 
+        /*
+         * legacy_alter_table, for the one thing it is still good for.
+         *
+         * Since SQLite 3.25 a RENAME rewrites references to that table inside
+         * every OTHER table's foreign keys. So renaming the users table out of
+         * the way silently repointed the picks and buy-back tables at
+         * Users_<season>_old, and the DROP three lines below then took that
+         * table away -- leaving both of them referencing something that does
+         * not exist. With foreign_keys ON, which this store sets, every insert
+         * of a pick failed from then on.
+         *
+         * The pragma restores the older behaviour of leaving other tables
+         * alone, which is what this migration wants: nothing outside the users
+         * table is being changed.
+         */
+        $this->pdo->exec('PRAGMA legacy_alter_table = ON');
         $this->pdo->exec("ALTER TABLE {$this->userTable} RENAME TO {$this->userTable}_old");
+        $this->pdo->exec('PRAGMA legacy_alter_table = OFF');
         $this->createTables();
 
         $insert = $this->pdo->prepare(
@@ -119,6 +137,58 @@ final class SqliteStore implements PoolStore
         }
 
         $this->pdo->exec("DROP TABLE {$this->userTable}_old");
+    }
+
+    /*
+     * Rebuilds any table whose foreign key points at a table that is gone.
+     *
+     * Databases that went through the PIN migration before the pragma above
+     * was added are already damaged, and they are the ones with real picks in
+     * them. This finds that specific breakage -- a reference to
+     * Users_<season>_old, which is never a table that should exist once the
+     * migration has finished -- and rebuilds the table around the correct
+     * foreign key, keeping every row.
+     *
+     * Cheap to check and does nothing on a healthy database, so it runs on
+     * open rather than as a migration somebody has to remember.
+     */
+    private function repairForeignKeysLeftDangling(): void
+    {
+        $stale = $this->userTable . '_old';
+
+        foreach ([$this->picksTable, $this->buybackTable] as $table) {
+            $sql = $this->pdo
+                ->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = " . $this->pdo->quote($table))
+                ->fetchColumn();
+
+            if ($sql === false || strpos((string) $sql, $stale) === false) {
+                continue;
+            }
+
+            $rows = $this->pdo->query("SELECT * FROM {$table}")->fetchAll(PDO::FETCH_ASSOC);
+
+            /*
+             * Off for the rebuild: the table being dropped is referenced by
+             * nothing, but the drop and recreate is a schema change and SQLite
+             * asks for foreign keys to be off during those.
+             */
+            $this->pdo->exec('PRAGMA foreign_keys = OFF');
+            $this->pdo->exec("DROP TABLE {$table}");
+            $this->createTables();
+
+            if ($rows !== []) {
+                $columns = array_keys($rows[0]);
+                $insert = $this->pdo->prepare(
+                    "INSERT INTO {$table} (" . implode(', ', $columns) . ")"
+                    . " VALUES (" . implode(', ', array_fill(0, count($columns), '?')) . ")"
+                );
+                foreach ($rows as $row) {
+                    $insert->execute(array_values($row));
+                }
+            }
+
+            $this->pdo->exec('PRAGMA foreign_keys = ON');
+        }
     }
 
     public function buybacks(): array
