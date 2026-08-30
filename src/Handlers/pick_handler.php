@@ -7,6 +7,7 @@ include_once __DIR__ . "/../week_manager.php";
 
 use LoserPool\Nfl\Teams;
 use LoserPool\Pool\Standings;
+use LoserPool\Pool\SeasonConfig;
 
 
 /*
@@ -112,16 +113,15 @@ function ph_team_label(string $team): string
 function ph_get_picks_html_table(bool $out_of_band = false): string
 {
     $store = lp_store();
-    $show_weeks_count = 8;
     $hide_picks = lp_picks_are_hidden();
     $current_week = get_current_week();
-    if ($current_week <= $show_weeks_count) {
-        $start_week = 1;
-        $end_week = $show_weeks_count;
-    } else {
-        $start_week = $current_week - $show_weeks_count + 1;
-        $end_week = $current_week;
-    }
+    /*
+     * The whole season so far, not a rolling window: a player's record is the
+     * point of the table, and a window that scrolls off week 1 hides the picks
+     * that eliminated most of the pool.
+     */
+    $start_week = 1;
+    $end_week = max(1, min($current_week, SeasonConfig::REGULAR_SEASON_WEEKS));
 
     $users = $store->allUsernames();
 
