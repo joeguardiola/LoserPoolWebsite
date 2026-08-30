@@ -1,13 +1,28 @@
-# php_value display_errors On
-# php_value mbstring.http_input auto
-# php_value date.timezone America/New_York
+# Per-directory Apache config for the docroot.
+#
+# Inert in the container: the image sets AllowOverride None, and the same rules
+# are applied properly in the Dockerfile, where they cannot be ignored. This
+# file is kept because docs/deployment-contingency.md keeps a conventional PHP
+# host as the fallback, and on most of those .htaccess is read and is the only
+# configuration a deployer gets to touch.
+#
+# It previously ended with "Options +Indexes", which turns directory listing
+# ON. That contradicted the container, where listing is off, so the two
+# disagreed about a basic protection and the file that was easiest to trust was
+# the wrong one. Anything added here has to match the Dockerfile.
 
-# FallbackResource /index.html
+# No directory listing. Without it, a directory with no index file answers with
+# its contents, which turns a missing file into a browsable listing of
+# everything beside it.
+Options -Indexes
 
-#RewriteEngine on
-#RewriteCond %{REQUEST_FILENAME} !-f
-#RewriteCond %{REQUEST_FILENAME} !-d
-#RewriteRule ^.*$ /index.php [L,QSA]
-
-# enable directory listing
-Options +Indexes
+# Nothing outside the docroot should be reachable, but say so anyway: on a
+# shared host the layout is whatever the uploader made it, not what the
+# Dockerfile built.
+# Guarded: "Require" is Apache 2.4. On 2.2 an unrecognised directive is a 500
+# for the whole site, and a fallback host is exactly where nobody is watching.
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(sqlite|json|md|yml|lock)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
