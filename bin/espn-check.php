@@ -35,15 +35,27 @@ printf("curl available   %s\n", function_exists('curl_init') ? 'yes' : 'no (fall
 printf("allow_url_fopen  %s\n", ini_get('allow_url_fopen') ? 'on' : 'off');
 printf("cache writable   %s\n", is_writable(is_dir($cacheDir) ? $cacheDir : dirname($cacheDir)) ? 'yes' : 'NO');
 
-$schedule = $client->weekSchedule(SeasonConfig::YEAR, 1);
+/*
+ * Probed with the current-week lookup, never with a week's schedule.
+ *
+ * A finished week is cached as final and never expires, so asking for one makes
+ * no HTTP request at all -- this reported "no request made / PROBLEM: no live
+ * data" from the moment week 1 went final, on a host that was reaching ESPN
+ * perfectly well. The current-week lookup is never final, so at TTL 0 it always
+ * goes to the network, which is the only thing that can answer the question
+ * this tool exists to ask.
+ */
+$current = $client->currentSeasonWeek();
 $sources = $client->sources();
-$source = reset($sources) ?: 'unavailable';
+$source = $sources['nfl-current'] ?? 'unavailable';
 $status = $client->lastHttpStatus();
 
 echo str_repeat('-', 46), "\n";
 printf("HTTP status      %s\n", $status === null ? 'no request made' : $status);
 printf("Data source      %s\n", $source);
-printf("Week 1 games     %d\n", count($schedule->games()));
+printf("ESPN reports     %s\n", $current === null
+    ? 'nothing readable'
+    : sprintf('%d week %d (season type %d)', $current['year'], $current['week'], $current['seasonType']));
 
 $snapshots = glob($snapshotDir . '/*.json') ?: [];
 printf("Snapshots        %d files\n", count($snapshots));
