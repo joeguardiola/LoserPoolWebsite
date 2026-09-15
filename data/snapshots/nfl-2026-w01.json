@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-29T03:55:25+00:00",
+    "generated_at": "2026-09-15T17:38:14+00:00",
     "season": {
         "type": 2,
         "year": 2026
@@ -15,8 +15,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -24,15 +24,15 @@
                             "team": {
                                 "displayName": "Seattle Seahawks"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "13"
                         },
                         {
                             "team": {
                                 "displayName": "New England Patriots"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "10"
                         }
                     ]
                 }
@@ -45,8 +45,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -54,15 +54,15 @@
                             "team": {
                                 "displayName": "Los Angeles Rams"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "7"
                         },
                         {
                             "team": {
                                 "displayName": "San Francisco 49ers"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "27"
                         }
                     ]
                 }
@@ -75,8 +75,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -84,15 +84,15 @@
                             "team": {
                                 "displayName": "Cincinnati Bengals"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "33"
                         },
                         {
                             "team": {
                                 "displayName": "Tampa Bay Buccaneers"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "27"
                         }
                     ]
                 }
@@ -105,8 +105,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -114,15 +114,15 @@
                             "team": {
                                 "displayName": "Detroit Lions"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "31"
                         },
                         {
                             "team": {
                                 "displayName": "New Orleans Saints"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "30"
                         }
                     ]
                 }
@@ -135,8 +135,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -144,15 +144,15 @@
                             "team": {
                                 "displayName": "Tennessee Titans"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "10"
                         },
                         {
                             "team": {
                                 "displayName": "New York Jets"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "23"
                         }
                     ]
                 }
@@ -165,8 +165,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -174,15 +174,15 @@
                             "team": {
                                 "displayName": "Indianapolis Colts"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "23"
                         },
                         {
                             "team": {
                                 "displayName": "Baltimore Ravens"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "41"
                         }
                     ]
                 }
@@ -195,8 +195,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -204,15 +204,15 @@
                             "team": {
                                 "displayName": "Pittsburgh Steelers"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "20"
                         },
                         {
                             "team": {
                                 "displayName": "Atlanta Falcons"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "13"
                         }
                     ]
                 }
@@ -225,8 +225,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -234,15 +234,15 @@
                             "team": {
                                 "displayName": "Carolina Panthers"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "37"
                         },
                         {
                             "team": {
                                 "displayName": "Chicago Bears"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "59"
                         }
                     ]
                 }
@@ -255,8 +255,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -264,15 +264,15 @@
                             "team": {
                                 "displayName": "Jacksonville Jaguars"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "34"
                         },
                         {
                             "team": {
                                 "displayName": "Cleveland Browns"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "10"
                         }
                     ]
                 }
@@ -285,8 +285,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -294,15 +294,15 @@
                             "team": {
                                 "displayName": "Houston Texans"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "31"
                         },
                         {
                             "team": {
                                 "displayName": "Buffalo Bills"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "36"
                         }
                     ]
                 }
@@ -315,8 +315,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -324,15 +324,15 @@
                             "team": {
                                 "displayName": "Las Vegas Raiders"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "27"
                         },
                         {
                             "team": {
                                 "displayName": "Miami Dolphins"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "13"
                         }
                     ]
                 }
@@ -345,8 +345,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -354,15 +354,15 @@
                             "team": {
                                 "displayName": "Minnesota Vikings"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "39"
                         },
                         {
                             "team": {
                                 "displayName": "Green Bay Packers"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "22"
                         }
                     ]
                 }
@@ -375,8 +375,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -384,15 +384,15 @@
                             "team": {
                                 "displayName": "Philadelphia Eagles"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "24"
                         },
                         {
                             "team": {
                                 "displayName": "Washington Commanders"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "22"
                         }
                     ]
                 }
@@ -405,8 +405,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -414,15 +414,15 @@
                             "team": {
                                 "displayName": "Los Angeles Chargers"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "14"
                         },
                         {
                             "team": {
                                 "displayName": "Arizona Cardinals"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "26"
                         }
                     ]
                 }
@@ -435,8 +435,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -444,15 +444,15 @@
                             "team": {
                                 "displayName": "New York Giants"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "28"
                         },
                         {
                             "team": {
                                 "displayName": "Dallas Cowboys"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "20"
                         }
                     ]
                 }
@@ -465,8 +465,8 @@
                 {
                     "status": {
                         "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
+                            "name": "STATUS_FINAL",
+                            "completed": true
                         }
                     },
                     "competitors": [
@@ -474,15 +474,15 @@
                             "team": {
                                 "displayName": "Kansas City Chiefs"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": true,
+                            "score": "31"
                         },
                         {
                             "team": {
                                 "displayName": "Denver Broncos"
                             },
-                            "winner": null,
-                            "score": "0"
+                            "winner": false,
+                            "score": "10"
                         }
                     ]
                 }
