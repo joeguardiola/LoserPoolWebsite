@@ -132,7 +132,8 @@ function ph_get_picks_html_table(bool $out_of_band = false): string
         $all_picks,
         'check_loser',
         $store->buybacks(),
-        $users
+        $users,
+        lp_weeks_requiring_a_pick()
     );
     $still_in = Standings::stillIn($standings);
 

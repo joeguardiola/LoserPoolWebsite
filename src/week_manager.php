@@ -198,6 +198,51 @@ function get_INELIGIBLE_reasons($week): array
     );
 }
 
+/*
+ * Weeks in which failing to pick eliminates a player.
+ *
+ * Two conditions, and a week must meet both:
+ *
+ *   - it has finished, so there was something to get wrong; and
+ *   - a pick was actually possible in it.
+ *
+ * The second is not hypothetical. 2026 week 18 is played entirely on Saturday,
+ * and Saturday is a blocked kickoff day, so all 32 teams are unpickable and
+ * nobody can submit a week 18 pick through the site at all. Without this guard
+ * the first standings render after week 18 finished would eliminate every
+ * remaining player at once, for not doing something the site refused to let
+ * them do. See SeasonConfig::BLOCKED_KICKOFF_DAYS -- that is a decision, not an
+ * oversight, and this is the other half of paying for it.
+ *
+ * A week whose schedule could not be loaded is not complete, so it is excluded:
+ * an empty schedule and a finished one are the same shape, and only one of them
+ * means the week is settled.
+ *
+ * @return int[]
+ */
+function lp_weeks_requiring_a_pick(): array
+{
+    $weeks = [];
+    $teams = Teams::all();
+    $current = get_current_week();
+
+    for ($week = 1; $week <= $current; $week++) {
+        $schedule = lp_week_schedule($week);
+        if (!$schedule->isComplete()) {
+            continue;
+        }
+
+        $ineligible = Rules::ineligibleTeams($schedule, $teams, SeasonConfig::BLOCKED_KICKOFF_DAYS);
+        if (count($ineligible) >= count($teams)) {
+            continue; /* nobody could pick, so nobody can be punished for not picking */
+        }
+
+        $weeks[] = $week;
+    }
+
+    return $weeks;
+}
+
 /* 1 if the pick came in (team lost), -1 if it did not, 0 if undecided. */
 function check_loser($week, $team): int
 {

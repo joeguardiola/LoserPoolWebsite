@@ -22,6 +22,132 @@ final class StandingsTest extends TestCase
         };
     }
 
+    /*
+     * Not picking is a failure, and it was not being counted.
+     *
+     * The loop used to walk a player's picks, which only ever visits weeks they
+     * actually played -- so a missed week was skipped and someone who never
+     * picked at all survived the season. In 2026 four players had no week 1
+     * pick and the table counted every one of them as still in.
+     */
+    public function testNotPickingInAFinishedWeekEliminates(): void
+    {
+        $standings = Standings::build(
+            ['joeg' => [2 => 'Giants']],
+            $this->checker(['2:Giants' => Rules::PICK_CORRECT]),
+            [],
+            ['joeg'],
+            [1, 2]
+        );
+
+        $this->assertSame(Standings::OUT, $standings['joeg']['status']);
+        $this->assertSame(1, $standings['joeg']['outWeek']);
+    }
+
+    /* A player who never picked at all is out, not quietly carried all season. */
+    public function testAPlayerWhoNeverPickedIsOut(): void
+    {
+        $standings = Standings::build(
+            [],
+            $this->checker([]),
+            [],
+            ['ghost'],
+            [1]
+        );
+
+        $this->assertSame(Standings::OUT, $standings['ghost']['status']);
+        $this->assertSame(1, $standings['ghost']['outWeek']);
+    }
+
+    /* A week nobody has played yet cannot be missed. */
+    public function testNotPickingInAnUnfinishedWeekDoesNotEliminate(): void
+    {
+        $standings = Standings::build(
+            ['joeg' => [1 => 'Bears']],
+            $this->checker(['1:Bears' => Rules::PICK_CORRECT]),
+            [],
+            ['joeg'],
+            [1]
+        );
+
+        $this->assertSame(Standings::IN, $standings['joeg']['status']);
+    }
+
+    /*
+     * The week 18 guard, and the reason the eliminating weeks are passed in.
+     *
+     * 2026 week 18 is played entirely on Saturday, which is a blocked kickoff
+     * day, so all 32 teams are unpickable and nobody can submit a week 18 pick
+     * through the site. If a week in which no pick was possible counted as a
+     * missed pick, the first render after it finished would eliminate every
+     * remaining player at once. The caller leaves such a week out of the list.
+     */
+    public function testAWeekNobodyCouldPickInDoesNotEliminate(): void
+    {
+        /* A survivor who picked, and won, every week the site let them pick. */
+        $picks = [];
+        $results = [];
+        for ($week = 1; $week <= 17; $week++) {
+            $picks[$week] = 'Team' . $week;
+            $results[$week . ':Team' . $week] = Rules::PICK_CORRECT;
+        }
+
+        $standings = Standings::build(
+            ['joeg' => $picks],
+            $this->checker($results),
+            [],
+            ['joeg'],
+            range(1, 17) /* week 18 finished too, but no pick was possible in it */
+        );
+
+        $this->assertSame(Standings::IN, $standings['joeg']['status']);
+        $this->assertNull($standings['joeg']['outWeek']);
+        $this->assertSame(17, $standings['joeg']['correct']);
+    }
+
+    /* Buying back in forgives a missed week 1 exactly as it forgives a bad one. */
+    public function testABuybackForgivesAMissedWeekOne(): void
+    {
+        $standings = Standings::build(
+            ['joeg' => [2 => 'Giants']],
+            $this->checker(['2:Giants' => Rules::PICK_CORRECT]),
+            ['joeg'],
+            ['joeg'],
+            [1, 2]
+        );
+
+        $this->assertSame(Standings::IN, $standings['joeg']['status']);
+    }
+
+    /* A missed week 2 is not forgiven by a week 1 buy-back. */
+    public function testABuybackDoesNotForgiveALaterMissedWeek(): void
+    {
+        $standings = Standings::build(
+            ['joeg' => [1 => 'Bears']],
+            $this->checker(['1:Bears' => Rules::PICK_CORRECT]),
+            ['joeg'],
+            ['joeg'],
+            [1, 2]
+        );
+
+        $this->assertSame(Standings::OUT, $standings['joeg']['status']);
+        $this->assertSame(2, $standings['joeg']['outWeek']);
+    }
+
+    /* The earliest failure is the one that counts, missed or wrong. */
+    public function testAMissedWeekBeatsALaterBadPick(): void
+    {
+        $standings = Standings::build(
+            ['joeg' => [3 => 'Jets']],
+            $this->checker(['3:Jets' => Rules::PICK_INCORRECT]),
+            [],
+            ['joeg'],
+            [2, 3]
+        );
+
+        $this->assertSame(2, $standings['joeg']['outWeek']);
+    }
+
     public function testAPlayerWhoseTeamsAllLostIsStillIn(): void
     {
         $standings = Standings::build(

@@ -103,7 +103,8 @@ function uh_get_user_option_list_html(): string
         $store->allPicks(),
         'check_loser',
         $store->buybacks(),
-        $users
+        $users,
+        lp_weeks_requiring_a_pick()
     );
 
     $still_in = '';

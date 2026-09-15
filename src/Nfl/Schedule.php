@@ -107,6 +107,29 @@ final class Schedule
         return $this->games === [];
     }
 
+    /*
+     * Has every game this week finished?
+     *
+     * An empty schedule is not complete. "No games known" and "all games
+     * played" are the same shape -- nothing left outstanding -- and only one of
+     * them means the week is settled. Treating a failed schedule load as a
+     * finished week would eliminate everyone who had not picked in it.
+     */
+    public function isComplete(): bool
+    {
+        if ($this->games === []) {
+            return false;
+        }
+
+        foreach ($this->games as $game) {
+            if (!$game->isCompleted()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /* Every team with a game this week. Teams on bye are simply absent. */
     public function teamsPlaying(): array
     {
