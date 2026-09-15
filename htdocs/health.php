@@ -30,9 +30,33 @@ $snapshotDir = SeasonConfig::snapshotDir();
 
 /* TTL 0: always attempt the network, so this reflects reality rather than cache. */
 $client = new EspnClient($cacheDir, SeasonConfig::timezone(), $snapshotDir, 0, SeasonConfig::HTTP_TIMEOUT_SECONDS);
-$schedule = $client->weekSchedule(SeasonConfig::YEAR, 1);
+
+/*
+ * Connectivity is probed with the current-week lookup, never with a week's
+ * schedule.
+ *
+ * A finished week is cached as final and never expires -- deliberately, since
+ * its result cannot change -- so asking for one makes no HTTP request at all.
+ * This check used to ask for week 1, which meant that from the moment week 1
+ * went final it reported "cannot reach ESPN" every single day, whatever the
+ * truth was. It did exactly that on 15 September 2026 while the container was
+ * fetching from ESPN perfectly well, and it failed the deploy's health gate
+ * along with it.
+ *
+ * A monitor that cannot come back green is worse than no monitor: it cries wolf
+ * daily and can no longer report the outage it exists to catch. The
+ * current-week probe is the right question because it is never final, so at TTL
+ * 0 it always goes to the network.
+ */
+$current = $client->currentSeasonWeek();
+
+$week = get_current_week();
+$schedule = $client->weekSchedule(SeasonConfig::YEAR, $week);
+
+/* Read after both lookups: sources() accumulates, so an early copy misses one. */
 $sources = $client->sources();
-$source = reset($sources) ?: 'unavailable';
+$source = $sources['nfl-current'] ?? 'unavailable';
+$scheduleSource = $sources[sprintf('nfl-%d-w%02d', SeasonConfig::YEAR, $week)] ?? 'unavailable';
 
 $cacheTarget = is_dir($cacheDir) ? $cacheDir : dirname($cacheDir);
 $snapshots = glob($snapshotDir . '/*.json') ?: [];
@@ -56,6 +80,9 @@ $problems = [];
 if ($source !== 'live') {
     $problems[] = 'Cannot reach ESPN. The site still works, but RESULTS WILL NEVER UPDATE.';
 }
+if ($current === null && $source === 'live') {
+    $problems[] = 'ESPN answered but the reply could not be read as a current week.';
+}
 if (!is_writable($cacheTarget)) {
     $problems[] = 'Cache directory is not writable. Every page load will re-fetch from ESPN.';
 }
@@ -70,8 +97,8 @@ echo "Loser Pool health\n";
 echo str_repeat('=', 40), "\n";
 printf("Status         %s\n", $problems === [] ? 'OK' : 'PROBLEM');
 printf("Season         %d\n", SeasonConfig::YEAR);
-printf("Current week   %d\n", get_current_week());
-printf("Schedule data  %s (%d games in week 1)\n", $source, count($schedule->games()));
+printf("Current week   %d\n", $week);
+printf("Schedule data  %s (%d games in week %d)\n", $scheduleSource, count($schedule->games()), $week);
 printf("Outbound HTTP  %s\n", $source === 'live' ? 'working' : 'NOT working');
 printf("Cache writable %s\n", is_writable($cacheTarget) ? 'yes' : 'no');
 printf("Snapshots      %d files%s\n", count($snapshots),
