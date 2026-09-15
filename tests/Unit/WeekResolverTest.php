@@ -98,6 +98,57 @@ final class WeekResolverTest extends TestCase
     }
 
     /*
+     * Regression, and the reason lateLiveWeek() exists.
+     *
+     * Pool weeks turn over at 00:00 Tuesday. ESPN's scoreboard does not: it
+     * goes on reporting the week whose games finished on Monday night until it
+     * rolls over on Wednesday. On Tuesday 15 September 2026 -- the first day of
+     * pool week 2 -- ESPN still said week 1, so the site called week 1 current,
+     * and because Tuesday is outside the Sunday/Monday lock every player could
+     * edit a week 1 pick whose games had already been played and settled.
+     */
+    public function testTuesdayAdvancesPastAnEspnWeekThatHasNotRolledOver(): void
+    {
+        $current = ['year' => 2026, 'seasonType' => 2, 'week' => 1];
+
+        $this->assertSame(2, $this->resolve($current, '2026-09-15 00:01:00'));
+        $this->assertSame(2, $this->resolve($current, '2026-09-15 23:59:00'));
+    }
+
+    /*
+     * The rest of the pool week, where the two agree. Wednesday onwards ESPN
+     * has caught up, and nothing here may nudge the week forward a second time.
+     */
+    public function testTheLiveWeekIsLeftAloneOnceEspnHasRolledOver(): void
+    {
+        $current = ['year' => 2026, 'seasonType' => 2, 'week' => 2];
+
+        $this->assertSame(2, $this->resolve($current, '2026-09-16 12:00:00')); /* Wed */
+        $this->assertSame(2, $this->resolve($current, '2026-09-19 12:00:00')); /* Sat */
+        $this->assertSame(2, $this->resolve($current, '2026-09-20 12:00:00')); /* Sun */
+        $this->assertSame(2, $this->resolve($current, '2026-09-21 23:59:00')); /* Mon */
+    }
+
+    /*
+     * The advance is capped at a single week, so a mis-set WEEK_ONE_START costs
+     * one week rather than running the season away to week 18.
+     */
+    public function testTheCalendarMayOnlyAdvanceTheLiveWeekByOne(): void
+    {
+        $current = ['year' => 2026, 'seasonType' => 2, 'week' => 2];
+
+        $this->assertSame(3, $this->resolve($current, '2026-11-24 12:00:00'));
+    }
+
+    /* A live week ahead of the calendar is the floor and is never rewound. */
+    public function testALiveWeekAheadOfTheCalendarIsKept(): void
+    {
+        $current = ['year' => 2026, 'seasonType' => 2, 'week' => 6];
+
+        $this->assertSame(6, $this->resolve($current, '2026-09-15 12:00:00'));
+    }
+
+    /*
      * Regression: the site reported week 18 for every date in 2026 because the
      * year alone decided the answer.
      */
