@@ -45,6 +45,21 @@ final class SeasonSimulationTest extends TestCase
         $this->store = SqliteStore::open(':memory:', '26');
         lp_store($this->store);
         $this->weeks = [];
+
+        /*
+         * Start every test in week 1, before it has said so itself.
+         *
+         * Most tests here register their players before the first openWeek(),
+         * and registration closes after week 1 -- so without this the gate is
+         * answered by whatever the *previous* test left behind in the
+         * process-wide schedule source, and by the real wall clock. Both were
+         * invisible until the season started: lp_registration_is_open() returns
+         * true outright while lp_season_in_progress() is false, so all the way
+         * up to 8 September 2026 the suite passed without ever consulting
+         * either. It went red on its own on the first Tuesday of week 2, with
+         * no commit behind it.
+         */
+        $this->enterWeek(1);
     }
 
     protected function tearDown(): void

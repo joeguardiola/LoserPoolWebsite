@@ -72,12 +72,34 @@ final class EspnClient implements ScheduleSource
         return Schedule::fromEspnPayload($payload, $this->timezone);
     }
 
+    /*
+     * Which week the NFL is in right now, or null if we cannot currently say.
+     *
+     * This is the one lookup that does not take the degradation ladder's lower
+     * rungs. Everywhere else, old data is better than none: a stale week 3
+     * schedule still lists the right fixtures. Here it is the opposite, because
+     * the question is "what week is it *now*" and a remembered answer to that
+     * is not a worse answer, it is last week's answer.
+     *
+     * It matters because the caller cannot tell the difference. WeekResolver
+     * reads a non-null return as a live reading and follows it; only null sends
+     * it to the calendar, which needs no network and is right every day of the
+     * season. So when ESPN is unreachable, a cached "week 1" would pin the pool
+     * to week 1 for the rest of the year -- picks for a week already played,
+     * reopened, with the results known -- while the site looked healthy.
+     *
+     * Fresh cache is still fine: it is inside the TTL, so it is a recent
+     * reading rather than a remembered one.
+     */
     public function currentSeasonWeek(): ?array
     {
         /* The unparameterised scoreboard reports whatever the NFL is doing now. */
         $payload = $this->payload('nfl-current', self::BASE_URL, false);
         if ($payload === null || !isset($payload['season']['type'], $payload['week']['number'])) {
             return null;
+        }
+        if (!in_array($this->sources['nfl-current'] ?? '', ['live', 'cache'], true)) {
+            return null; /* stale cache or snapshot: too old to answer this question */
         }
 
         return [

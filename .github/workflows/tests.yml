@@ -1,10 +1,29 @@
 name: tests
 
+# Also runs on a schedule, with nothing pushed.
+#
+# The suite went red on 15 September 2026 without a commit behind it. Several
+# season tests answered "is registration open?" against the real wall clock,
+# and lp_registration_is_open() short-circuits to true for as long as
+# lp_season_in_progress() is false -- so every run before 8 September passed
+# without ever reaching the rule it was meant to be testing. The last push was
+# in August, so the last green tick stayed on master, and by the time the code
+# was wrong the pipeline had stopped looking.
+#
+# A daily run is what makes the tick mean "passing today" rather than "passed
+# whenever someone last pushed". Season rules are dated by nature: they will rot
+# on a calendar boundary again, and that should arrive as a failed job rather
+# than as a player noticing.
 on:
   push:
     branches: [master]
   pull_request:
   workflow_call:
+  workflow_dispatch:
+  schedule:
+    # 13:00 UTC daily, an hour before the health check, so a rules failure and
+    # a site failure land in the same morning's mail.
+    - cron: '0 13 * * *'
 
 jobs:
   test:

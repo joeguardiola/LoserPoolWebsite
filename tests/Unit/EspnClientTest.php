@@ -229,4 +229,42 @@ final class EspnClientTest extends TestCase
         $this->assertNull($this->client([null])->currentSeasonWeek());
         $this->assertNull($this->client(['{"events":[]}'])->currentSeasonWeek());
     }
+
+    /*
+     * "What week is it now" is the one question a stale answer cannot answer.
+     *
+     * Every other lookup takes the ladder all the way down, because an old
+     * schedule still lists the right fixtures. This one must stop at the rungs
+     * that are actually current: WeekResolver treats any non-null return as a
+     * live reading and follows it, and only null sends it to the calendar. So a
+     * remembered "week 1" served while ESPN is unreachable would pin the pool to
+     * week 1 for the rest of the season -- reopening a week already played, with
+     * the results known -- and the site would look perfectly healthy doing it.
+     *
+     * That is not hypothetical: the deployed app lost outbound HTTP on
+     * 15 September 2026 and was serving exactly this.
+     */
+    public function testCurrentSeasonWeekRefusesToAnswerFromStaleCache(): void
+    {
+        $warm = $this->client(['{"season":{"type":2,"year":2026},"week":{"number":1},"events":[]}'], 0);
+        $this->assertSame(1, $warm->currentSeasonWeek()['week'], 'a live reading is used');
+
+        /* Same cache directory, no network. The ladder falls to stale cache. */
+        $offline = $this->client([null], 0);
+
+        $this->assertNull($offline->currentSeasonWeek());
+        $this->assertSame('stale-cache', $offline->sources()['nfl-current']);
+    }
+
+    /* Inside the TTL it is a recent reading, not a remembered one, so it counts. */
+    public function testCurrentSeasonWeekStillUsesFreshCache(): void
+    {
+        $warm = $this->client(['{"season":{"type":2,"year":2026},"week":{"number":4},"events":[]}'], 600);
+        $warm->currentSeasonWeek();
+
+        $offline = $this->client([null], 600);
+
+        $this->assertSame(4, $offline->currentSeasonWeek()['week']);
+        $this->assertSame('cache', $offline->sources()['nfl-current']);
+    }
 }

@@ -12,6 +12,13 @@ use DateTimeImmutable;
  * return 18` that pinned the site to a finished season. Both are replaced by
  * asking ESPN, with calendar arithmetic as an offline fallback.
  *
+ * ESPN is authoritative about which NFL week is being played, but it is not
+ * authoritative about when the *pool's* week turns over. Pool weeks run
+ * Tuesday to Monday; ESPN's scoreboard keeps reporting the week whose games
+ * just finished until it rolls over on Wednesday. For the Tuesday in between,
+ * the two disagree by one, and taking ESPN's answer reopens the week that has
+ * already been played. See lateLiveWeek() below.
+ *
  * Pure: every input is a parameter, so each branch is directly testable.
  */
 final class WeekResolver
@@ -37,7 +44,12 @@ final class WeekResolver
                 return 1; /* season hasn't started; week 1 is what people pick */
             }
             if ($type === self::REGULAR_SEASON) {
-                return self::clamp((int) ($current['week'] ?? 1), $maxWeeks);
+                return self::lateLiveWeek(
+                    self::clamp((int) ($current['week'] ?? 1), $maxWeeks),
+                    $now,
+                    $weekOneStart,
+                    $maxWeeks
+                );
             }
             return $maxWeeks; /* playoffs or later: the pool is over */
         }
@@ -48,6 +60,32 @@ final class WeekResolver
          * for this one. Fall back to the calendar.
          */
         return self::fromCalendar($now, $weekOneStart, $maxWeeks);
+    }
+
+    /*
+     * ESPN's week number, advanced when the pool's calendar has already moved
+     * on and ESPN has not.
+     *
+     * The gap is at most one week and it is always ESPN that is behind, so the
+     * calendar may only ever advance the live answer by a single week. That
+     * bound is what keeps a mis-set WEEK_ONE_START from running the season
+     * away: a wrong constant costs one week, not the rest of the season, and
+     * it cannot rewind a week that has been played either, because the live
+     * answer is still the floor.
+     */
+    private static function lateLiveWeek(
+        int $liveWeek,
+        DateTimeImmutable $now,
+        DateTimeImmutable $weekOneStart,
+        int $maxWeeks
+    ): int {
+        $calendarWeek = self::fromCalendar($now, $weekOneStart, $maxWeeks);
+
+        if ($calendarWeek <= $liveWeek) {
+            return $liveWeek;
+        }
+
+        return self::clamp($liveWeek + 1, $maxWeeks);
     }
 
     /*
