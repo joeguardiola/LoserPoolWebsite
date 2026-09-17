@@ -25,6 +25,51 @@ function ph_status_bad(string $message): string
     return "<p class='form-status form-status-bad' role='status'>" . $message . "</p>";
 }
 
+/*
+ * The whole table's standings.
+ *
+ * Two callers need them now: the picks table renders them, and ph_add_pick()
+ * refuses a pick from a player who is out. The caller may hand in rows it has
+ * already read, so a request that needs both the grid and the standings
+ * queries the store once rather than twice, and cannot answer the same
+ * question two ways within one response.
+ *
+ * @return array<string,array{status:string,outWeek:?int,correct:int}>
+ */
+function ph_standings(?array $allPicks = null, ?array $usernames = null): array
+{
+    $store = lp_store();
+
+    return Standings::build(
+        $allPicks ?? $store->allPicks(),
+        'check_loser',
+        $store->buybacks(),
+        $usernames ?? $store->allUsernames(),
+        lp_weeks_requiring_a_pick()
+    );
+}
+
+/*
+ * The week a player was knocked out, or null while they are still in.
+ *
+ * Everything that decides this fails open: an unfinished or unloadable week
+ * scores PICK_UNDECIDED and is skipped by lp_weeks_requiring_a_pick(), so a
+ * schedule we could not fetch leaves the whole pool reading as still in. That
+ * is the safe direction for a gate -- an ESPN outage cannot lock a living
+ * player out of the week they are trying to enter.
+ */
+function ph_eliminated_in(string $username): ?int
+{
+    $standings = ph_standings();
+    $row = $standings[$username] ?? null;
+
+    if ($row === null || $row['status'] === Standings::IN) {
+        return null;
+    }
+
+    return $row['outWeek'];
+}
+
 function ph_add_pick(string $userin, string $teamin, string $pinin): string
 {
     $store = lp_store();
@@ -52,6 +97,20 @@ function ph_add_pick(string $userin, string $teamin, string $pinin): string
     $create_ecode = 0;
     if (!$store->verifyPin($user, $pickpin)) {
         return ph_status_bad("Username/PIN combo is not valid.");
+    } else if (($out_week = ph_eliminated_in($user)) !== null) {
+        /*
+         * Checked after the PIN so the answer belongs to the player, not to
+         * anyone who can type their username -- though the standings table
+         * publishes the same fact, so this is order rather than secrecy.
+         *
+         * A player who bought back is not out: Standings::build() is given the
+         * buy-back list and forgives week 1 for the names on it, which is why
+         * this asks the standings rather than scoring week 1 here.
+         */
+        return ph_status_bad(
+            "You were knocked out in week " . $out_week . ", so this pick cannot be entered."
+            . " If that is wrong, email the commissioner."
+        );
     } else if (in_array($team, $earlier_picks, true)) {
         return ph_status_bad("Cannot repeat a choice. " . $team . " has already been used this season.");
     } else if (!in_array($team, Teams::all(), true)) {
@@ -128,13 +187,7 @@ function ph_get_picks_html_table(bool $out_of_band = false): string
     /* One query for the whole grid rather than one per player. */
     $all_picks = $store->allPicks();
 
-    $standings = Standings::build(
-        $all_picks,
-        'check_loser',
-        $store->buybacks(),
-        $users,
-        lp_weeks_requiring_a_pick()
-    );
+    $standings = ph_standings($all_picks, $users);
     $still_in = Standings::stillIn($standings);
 
     /*
