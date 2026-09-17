@@ -7,6 +7,7 @@ include_once __DIR__ . "/pick_handler.php";
 
 use LoserPool\Nfl\Teams;
 use function PickHandling\ph_get_user_picks_list;
+use function PickHandling\ph_eliminated_in;
 
 /*
  * Each option carries its own crest and club colour, so the enhanced picker
@@ -56,6 +57,24 @@ function get_team_options_html($user = ""): string
     $week = get_current_week();
     $reasons = get_INELIGIBLE_reasons($week);
     $this_weeks_pick = $users_picks[$week] ?? null;
+
+    /*
+     * A player who is out cannot pick at all, so every team carries the same
+     * reason. The list is still rendered in full and disabled rather than
+     * emptied, for the same reason one unavailable team is: an empty control,
+     * or a search that matches nothing, reads as a broken page rather than an
+     * answer. ph_add_pick() enforces this independently -- the disabled
+     * option stops a person clicking, and is worth nothing against a request
+     * that never came from this dropdown.
+     */
+    $out_week = $user != "" ? ph_eliminated_in($user) : null;
+    if ($out_week !== null) {
+        $options_list .= "<option value='' selected>Out in week " . $out_week . "</option>";
+        foreach (Teams::all() as $team) {
+            $options_list .= ph_team_option($team, 'Knocked out in week ' . $out_week);
+        }
+        return $options_list . "</select>";
+    }
 
     /*
      * Two buckets, alphabetical within each. Scattering the unavailable teams

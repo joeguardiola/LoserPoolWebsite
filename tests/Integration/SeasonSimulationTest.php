@@ -187,9 +187,17 @@ final class SeasonSimulationTest extends TestCase
     }
 
     /*
-     * Nothing stops an eliminated player from picking again, and people do.
-     * Scoring those picks put a row of green survival ticks next to a status
-     * of "Out", which reads as though the player is still alive.
+     * Picks already sitting in the store from after a player's elimination.
+     *
+     * The handler now refuses these, but the rendering still has to hold: a
+     * season's worth of them was recorded while it did not, and the
+     * commissioner's bin/set-pick.php can still write one. Scoring them put a
+     * row of green survival ticks next to a status of "Out", which reads as
+     * though the player is still alive.
+     *
+     * Bob's week 2 pick therefore goes in through the store, not the handler.
+     * Routing it through ph_add_pick() would now be refused, and the test
+     * would be asserting against a table that never had the row in it.
      */
     public function testPicksMadeAfterEliminationAreNotScored(): void
     {
@@ -205,10 +213,11 @@ final class SeasonSimulationTest extends TestCase
         $this->settleWeek(1, [$teams[0]], 2);
         $this->assertSame(1, $this->survivors());
 
-        /* Both pick a loser in week 2. Only Alice's counts. */
+        /* Both have a loser down for week 2. Only Alice's counts. */
         $this->openWeek(2);
         $this->pick('alice', $teams[4]);
-        $this->pick('bob', $teams[6]);
+        $this->assertStringContainsString('knocked out in week 1', $this->pick('bob', $teams[6]));
+        $this->store->savePick('bob', $teams[6], 2);
         $this->settleWeek(2, [$teams[4], $teams[6]], 3);
 
         $table = ph_get_picks_html_table();
@@ -361,5 +370,119 @@ final class SeasonSimulationTest extends TestCase
 
         $this->assertSame(4, $this->survivors());
         $this->assertStringContainsString('<strong>4</strong> still in of 6', ph_get_picks_html_table());
+    }
+
+    /*
+     * An eliminated player cannot enter another pick.
+     *
+     * The pool used to accept them and simply not count them, which is why
+     * buy-backs are recorded by hand -- continued play proved nothing. Now the
+     * handler refuses, so the picks table and the pick form agree about who is
+     * still playing.
+     */
+    public function testAnEliminatedPlayerCannotSubmitAnotherPick(): void
+    {
+        $teams = Teams::all();
+        $this->register('alice');
+
+        $this->openWeek(1);
+        $this->pick('alice', $teams[0]);
+        $this->settleWeek(1, [$teams[1]], 2);
+        $this->assertSame(0, $this->survivors(), 'her team won, so she is out');
+
+        $this->openWeek(2);
+        $result = $this->pick('alice', $teams[2]);
+
+        $this->assertStringContainsString('knocked out in week 1', $result);
+        $this->assertArrayNotHasKey(2, $this->store->picksFor('alice'), 'nothing was stored');
+    }
+
+    /*
+     * The refusal is about being out, not about week 1: a player knocked out
+     * later is stopped the same way, and the week named is the week they went.
+     */
+    public function testTheRefusalNamesTheWeekThePlayerWentOut(): void
+    {
+        $teams = Teams::all();
+        $this->register('alice');
+
+        $this->openWeek(1);
+        $this->pick('alice', $teams[0]);
+        $this->settleWeek(1, [$teams[0]], 2);
+
+        $this->openWeek(2);
+        $this->pick('alice', $teams[2]);
+        $this->settleWeek(2, [$teams[3]], 3);
+
+        $this->openWeek(3);
+        $result = $this->pick('alice', $teams[4]);
+
+        $this->assertStringContainsString('knocked out in week 2', $result);
+    }
+
+    /*
+     * A buy-back is the way back in, and it restores the ability to pick --
+     * not just a row in the table. This is the case the commissioner actually
+     * relies on every September.
+     */
+    public function testABoughtBackPlayerMayPickAgain(): void
+    {
+        $teams = Teams::all();
+        $this->register('alice');
+
+        $this->openWeek(1);
+        $this->pick('alice', $teams[0]);
+        $this->settleWeek(1, [$teams[1]], 2);
+
+        $this->openWeek(2);
+        $this->assertStringContainsString('knocked out in week 1', $this->pick('alice', $teams[2]));
+
+        $this->store->grantBuyback('alice');
+        $result = $this->pick('alice', $teams[2]);
+
+        $this->assertStringContainsString('Pick recorded for week 2', $result);
+        $this->assertSame($teams[2], $this->store->picksFor('alice')[2] ?? null);
+    }
+
+    /*
+     * Being out does not empty the dropdown. Every team is still listed and
+     * every one is disabled, so the control explains itself instead of looking
+     * like a page that failed to load its teams.
+     */
+    public function testTheDropdownTellsAnEliminatedPlayerWhyNothingIsPickable(): void
+    {
+        $teams = Teams::all();
+        $this->register('alice');
+
+        $this->openWeek(1);
+        $this->pick('alice', $teams[0]);
+        $this->settleWeek(1, [$teams[1]], 2);
+        $this->openWeek(2);
+
+        $options = get_team_options_html('alice');
+
+        $this->assertSame(
+            count($teams),
+            substr_count($options, 'disabled'),
+            'every team should be disabled, and none of them missing'
+        );
+        $this->assertTeamUnavailable($options, $teams[5], 'Knocked out in week 1');
+    }
+
+    /*
+     * A player still in is not touched by any of this.
+     */
+    public function testAPlayerStillInKeepsAnOrdinaryDropdown(): void
+    {
+        $teams = Teams::all();
+        $this->register('alice');
+
+        $this->openWeek(1);
+        $this->pick('alice', $teams[0]);
+        $this->settleWeek(1, [$teams[0]], 2);
+        $this->openWeek(2);
+
+        $this->assertTeamSelectable(get_team_options_html('alice'), $teams[5]);
+        $this->assertStringContainsString('Pick recorded for week 2', $this->pick('alice', $teams[2]));
     }
 }
