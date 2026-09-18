@@ -23,12 +23,24 @@ final class RemindersTest extends TestCase
         return new DateTimeImmutable($when, new DateTimeZone('America/Chicago'));
     }
 
-    public function testTheWindowIsTheDayBeforeTheLock(): void
+    public function testTheWindowIsTheAfternoonAndEveningBeforeTheLock(): void
     {
         /* Saturday 26 September 2026: picks lock at midnight into Sunday. */
-        $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-09-26 00:30:00')));
-        $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-09-26 09:00:00')));
+        $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-09-26 12:00:00')));
+        $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-09-26 18:00:00')));
         $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-09-26 23:58:00')));
+    }
+
+    /*
+     * The point of twelve rather than twenty-four: the first run inside the
+     * window is the one that sends, so the boundary is the hour the mail
+     * actually arrives. Nobody is woken at midnight or six in the morning.
+     */
+    public function testNothingSendsOvernightOrOnSaturdayMorning(): void
+    {
+        $this->assertFalse(Reminders::isSendWindow($this->chicago('2026-09-26 00:30:00')), 'midnight');
+        $this->assertFalse(Reminders::isSendWindow($this->chicago('2026-09-26 06:00:00')), 'dawn');
+        $this->assertFalse(Reminders::isSendWindow($this->chicago('2026-09-26 11:59:00')), 'a minute early');
     }
 
     public function testNothingSendsOutsideTheLastTwentyFourHours(): void
@@ -38,6 +50,10 @@ final class RemindersTest extends TestCase
         $this->assertFalse(
             Reminders::isSendWindow($this->chicago('2026-09-25 20:00:00')),
             'Friday evening is still 28 hours out'
+        );
+        $this->assertFalse(
+            Reminders::isSendWindow($this->chicago('2026-09-26 09:00:00')),
+            'Saturday morning is still more than twelve hours out'
         );
     }
 
@@ -60,12 +76,18 @@ final class RemindersTest extends TestCase
     public function testTheWindowSurvivesTheEndOfDaylightSaving(): void
     {
         /* Saturday 7 November 2026: CST, UTC-6. */
-        $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-11-07 09:00:00')));
+        $this->assertTrue(Reminders::isSendWindow($this->chicago('2026-11-07 13:00:00')));
+        $this->assertFalse(Reminders::isSendWindow($this->chicago('2026-11-07 09:00:00')), 'still morning');
         $this->assertFalse(Reminders::isSendWindow($this->chicago('2026-11-06 20:00:00')), 'Friday');
 
-        /* The same instants expressed in UTC must answer identically. */
-        $utc = new DateTimeImmutable('2026-11-07 15:00:00', new DateTimeZone('UTC'));
-        $this->assertTrue(Reminders::isSendWindow($utc), '09:00 CST given as UTC');
+        /*
+         * The same instant expressed in UTC must answer identically. In CST,
+         * 13:00 local is 19:00 UTC -- an hour later in UTC than the same local
+         * time in September, which is exactly the drift a UTC-pinned cron
+         * would have suffered.
+         */
+        $utc = new DateTimeImmutable('2026-11-07 19:00:00', new DateTimeZone('UTC'));
+        $this->assertTrue(Reminders::isSendWindow($utc), '13:00 CST given as UTC');
     }
 
     /** @return array<string,array{status:string,outWeek:?int,correct:int}> */

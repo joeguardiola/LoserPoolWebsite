@@ -16,14 +16,19 @@ final class Reminders
 {
     /*
      * Picks are due 11:59pm Central Saturday and the lock falls at 00:00
-     * Sunday, so the window opens 24 hours before that lock -- midnight
-     * Friday into Saturday -- and closes when the lock does.
+     * Sunday, so the window opens twelve hours before that lock -- noon on
+     * Saturday -- and closes when the lock does.
+     *
+     * Twelve rather than twenty-four because the first hourly run inside the
+     * window is the one that sends, and at twenty-four that run was midnight:
+     * the worst hour of the week to arrive in somebody's inbox, for a deadline
+     * still a full day away.
      *
      * Expressed against the lock rather than a stored hour because the
      * deadline is the lock; a published time a minute earlier is a courtesy,
      * and duplicating it here would make two answers possible.
      */
-    public const HOURS_BEFORE_LOCK = 24;
+    public const HOURS_BEFORE_LOCK = 12;
 
     /*
      * Is $now inside the send window for the current week?

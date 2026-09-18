@@ -2,7 +2,7 @@
 <?php
 
 /*
- * Mails the players who have not picked yet, 24 hours before the deadline.
+ * Mails the players who have not picked yet, twelve hours before the lock.
  *
  * Scheduled hourly rather than once a week. The send window is decided here,
  * in the pool's own timezone, because a cron fixed in UTC drifts an hour when

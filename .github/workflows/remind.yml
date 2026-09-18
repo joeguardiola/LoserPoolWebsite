@@ -1,7 +1,7 @@
 name: remind
 
-# Mails the players who have not picked, in the last 24 hours before the
-# deadline.
+# Mails the players who have not picked, in the last twelve hours before the
+# lock -- so the mail lands on Saturday afternoon rather than overnight.
 #
 # Hourly on Saturdays rather than a single timed run, because the cron field is
 # UTC and the deadline is 11:59pm Central. America/Chicago is UTC-5 until 1
@@ -13,8 +13,10 @@ name: remind
 # and an already-reminded player is skipped.
 on:
   schedule:
-    # Every hour on Saturday, UTC. The 05:00-06:00 UTC runs are Friday evening
-    # in Chicago and will report "not the send window"; that is the point.
+    # Every hour on Saturday, UTC. Most of these report "not the send window"
+    # and exit; that is the point. The window opens at noon Central, which is
+    # 17:00 UTC in daylight time and 18:00 UTC in standard time -- the hour
+    # that moves, and the reason the decision is not in this cron field.
     - cron: '0 * * * 6'
   workflow_dispatch:
     inputs:
