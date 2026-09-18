@@ -109,11 +109,18 @@ foreach ($due as $username) {
         continue;
     }
 
+    /*
+     * No link. The mail is sent from one domain and the pool is served from
+     * another, and a message whose only link points somewhere unrelated to its
+     * sender is the shape phishing has -- filters score it accordingly, which
+     * is part of why the first sends were filed as spam. Everyone in the pool
+     * already knows where to go.
+     */
     $subject = "Loser Pool week $week: your pick is due Saturday";
     $body = "You have not entered a pick for week $week yet.\n\n"
         . "Picks are due 11:59pm Central on Saturday. Not picking counts as a\n"
         . "failed week, and there are no buy-backs after week 1.\n\n"
-        . "Pick here: https://loser-pool-2026.fly.dev/\n\n"
+        . "Head to the pool site and get your pick in.\n\n"
         . "Your username is $username.\n";
 
     if (!$mailer->send($address, $subject, $body)) {
