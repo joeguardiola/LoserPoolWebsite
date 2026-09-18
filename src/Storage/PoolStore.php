@@ -90,4 +90,16 @@ interface PoolStore
 
     /** @return int one of OK, NO_SUCH_USER */
     public function grantBuyback(string $username): int;
+
+    /*
+     * Reminders already sent for a week, so a job that runs hourly mails each
+     * player at most once. Recorded per player rather than per week: a run
+     * that fails partway must resume, not restart.
+     *
+     * @return string[] usernames
+     */
+    public function remindersSent(int $week): array;
+
+    /** @return int one of OK, NO_SUCH_USER */
+    public function recordReminder(string $username, int $week, string $sentAt): int;
 }

@@ -11,6 +11,8 @@
 
 require_once __DIR__ . '/autoload.php';
 
+use LoserPool\Mail\Mailer;
+use LoserPool\Mail\ResendMailer;
 use LoserPool\Storage\PoolStore;
 use LoserPool\Storage\StoreFactory;
 
@@ -27,4 +29,29 @@ function lp_store(?PoolStore $override = null): PoolStore
     }
 
     return $store;
+}
+
+/*
+ * The mailer, or null when the environment carries no credentials.
+ *
+ * Null rather than a throw: the web app never sends mail, so a missing key
+ * must not be able to take the site down. Only bin/remind.php asks for one,
+ * and it reports "not configured" and stops.
+ */
+function lp_mailer(?Mailer $override = null): ?Mailer
+{
+    static $mailer = null;
+    static $resolved = false;
+
+    if ($override !== null) {
+        $mailer = $override;
+        $resolved = true;
+    }
+
+    if (!$resolved) {
+        $mailer = ResendMailer::fromEnvironment();
+        $resolved = true;
+    }
+
+    return $mailer;
 }

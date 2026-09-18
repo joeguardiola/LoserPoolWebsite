@@ -485,4 +485,44 @@ final class SeasonSimulationTest extends TestCase
         $this->assertTeamSelectable(get_team_options_html('alice'), $teams[5]);
         $this->assertStringContainsString('Pick recorded for week 2', $this->pick('alice', $teams[2]));
     }
+
+    /*
+     * The case the pool is actually in: bought back after week 1, then backed
+     * a winner in week 2.
+     *
+     * A buy-back forgives week 1 for the rest of the season, so it keeps being
+     * applied long after week 1 -- which is exactly why the second failure has
+     * to be the one that sticks. Losing both weeks must end the season, not be
+     * forgiven twice by the same list.
+     */
+    public function testABoughtBackPlayerWhoFailsWeekTwoIsStoppedForGood(): void
+    {
+        $teams = Teams::all();
+        $this->register('alice');
+
+        /* Out in week 1, then bought back. */
+        $this->openWeek(1);
+        $this->pick('alice', $teams[0]);
+        $this->settleWeek(1, [$teams[1]], 2);
+        $this->store->grantBuyback('alice');
+        $this->assertSame(1, $this->survivors(), 'the buy-back put her back in');
+
+        /* Week 2: she picks, and her team wins. */
+        $this->openWeek(2);
+        $this->assertStringContainsString('Pick recorded for week 2', $this->pick('alice', $teams[2]));
+        $this->settleWeek(2, [$teams[3]], 3);
+        $this->assertSame(0, $this->survivors(), 'week 2 is not forgiven');
+
+        /* Week 3: the form is shut, and names week 2 rather than week 1. */
+        $this->openWeek(3);
+        $result = $this->pick('alice', $teams[4]);
+
+        $this->assertStringContainsString('knocked out in week 2', $result);
+        $this->assertArrayNotHasKey(3, $this->store->picksFor('alice'), 'nothing was stored');
+
+        /* And it stays shut in week 4, with the buy-back still on record. */
+        $this->openWeek(4);
+        $this->assertStringContainsString('knocked out in week 2', $this->pick('alice', $teams[6]));
+        $this->assertSame(['alice'], $this->store->buybacks(), 'the buy-back was never consumed');
+    }
 }
