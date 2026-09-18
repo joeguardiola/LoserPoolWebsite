@@ -22,16 +22,20 @@ final class ResendMailer implements Mailer
     /** @var string */
     private $from;
 
+    /** @var string|null */
+    private $replyTo;
+
     /** @var int */
     private $timeout;
 
     /** @var string|null */
     private $lastError = null;
 
-    public function __construct(string $apiKey, string $from, int $timeout = 10)
+    public function __construct(string $apiKey, string $from, ?string $replyTo = null, int $timeout = 10)
     {
         $this->apiKey = $apiKey;
         $this->from = $from;
+        $this->replyTo = $replyTo;
         $this->timeout = $timeout;
     }
 
@@ -44,24 +48,52 @@ final class ResendMailer implements Mailer
     {
         $key = getenv('LP_RESEND_API_KEY');
         $from = getenv('LP_MAIL_FROM');
+        $replyTo = getenv('LP_MAIL_REPLY_TO');
 
         if (!is_string($key) || $key === '' || !is_string($from) || $from === '') {
             return null;
         }
 
-        return new self($key, $from);
+        return new self($key, $from, is_string($replyTo) && $replyTo !== '' ? $replyTo : null);
     }
 
     public function send(string $to, string $subject, string $body): bool
     {
         $this->lastError = null;
 
-        $payload = json_encode([
+        $message = [
             'from' => $this->from,
             'to' => [$to],
             'subject' => $subject,
             'text' => $body,
-        ]);
+            /*
+             * An HTML part alongside the text. A text-only message from an
+             * unknown domain is a shape bulk spam has, and the reminder is
+             * three lines either way -- there is nothing to lose by sending
+             * both.
+             */
+            'html' => self::asHtml($body),
+        ];
+
+        if ($this->replyTo !== null) {
+            /*
+             * A reply that reaches a person. Mail nobody can answer is both
+             * worse to receive and a mild spam signal.
+             */
+            $message['reply_to'] = $this->replyTo;
+
+            /*
+             * Gmail wants an unsubscribe route on bulk mail, and its absence
+             * counts against a sender. The list is a pool of people who asked
+             * to be in it, so the route is a mail to the commissioner rather
+             * than a preference centre.
+             */
+            $message['headers'] = [
+                'List-Unsubscribe' => '<mailto:' . self::addressOf($this->replyTo) . '?subject=unsubscribe>',
+            ];
+        }
+
+        $payload = json_encode($message);
 
         if ($payload === false) {
             $this->lastError = 'could not encode the message';
@@ -106,5 +138,30 @@ final class ResendMailer implements Mailer
     public function lastError(): ?string
     {
         return $this->lastError;
+    }
+
+    /* "Name <a@b>" -> "a@b"; a bare address is returned unchanged. */
+    public static function addressOf(string $mailbox): string
+    {
+        if (preg_match('/<([^>]+)>/', $mailbox, $m) === 1) {
+            return trim($m[1]);
+        }
+
+        return trim($mailbox);
+    }
+
+    /* The plain text as simple HTML: paragraphs, and links left as text. */
+    public static function asHtml(string $text): string
+    {
+        $escaped = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $paragraphs = preg_split('/\n{2,}/', trim($escaped)) ?: [];
+
+        $html = '';
+        foreach ($paragraphs as $paragraph) {
+            $html .= '<p>' . nl2br($paragraph) . '</p>';
+        }
+
+        return '<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5">'
+            . $html . '</div>';
     }
 }
