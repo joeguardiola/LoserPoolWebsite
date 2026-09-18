@@ -27,6 +27,7 @@ final class SqliteStore implements PoolStore
     private string $userTable;
     private string $picksTable;
     private string $buybackTable;
+    private string $remindersTable;
 
     public function __construct(PDO $pdo, string $seasonSuffix)
     {
@@ -35,6 +36,7 @@ final class SqliteStore implements PoolStore
         $this->userTable = 'Users_' . $seasonSuffix;
         $this->picksTable = 'Picks_' . $seasonSuffix;
         $this->buybackTable = 'Buybacks_' . $seasonSuffix;
+        $this->remindersTable = 'Reminders_' . $seasonSuffix;
         $this->createTables();
         $this->migratePlaintextPins();
         $this->repairForeignKeysLeftDangling();
@@ -80,6 +82,23 @@ final class SqliteStore implements PoolStore
         $this->pdo->exec(
             "CREATE TABLE IF NOT EXISTS {$this->buybackTable} (
                 username TEXT PRIMARY KEY COLLATE NOCASE,
+                FOREIGN KEY (username) REFERENCES {$this->userTable}(username)
+            )"
+        );
+        /*
+         * One row per reminder actually sent.
+         *
+         * Per player and week rather than a flag on the week, so a run that
+         * dies halfway resumes where it stopped instead of either re-mailing
+         * everyone or skipping the rest. The job is scheduled hourly and asks
+         * this table what it already did.
+         */
+        $this->pdo->exec(
+            "CREATE TABLE IF NOT EXISTS {$this->remindersTable} (
+                username TEXT NOT NULL COLLATE NOCASE,
+                week_number INTEGER NOT NULL,
+                sent_at TEXT NOT NULL,
+                PRIMARY KEY (username, week_number),
                 FOREIGN KEY (username) REFERENCES {$this->userTable}(username)
             )"
         );
@@ -335,5 +354,31 @@ final class SqliteStore implements PoolStore
         } catch (PDOException $e) {
             return self::ERROR;
         }
+    }
+
+    /** @return string[] usernames already reminded about this week */
+    public function remindersSent(int $week): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT username FROM {$this->remindersTable} WHERE week_number = ?"
+        );
+        $stmt->execute([$week]);
+
+        return array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function recordReminder(string $username, int $week, string $sentAt): int
+    {
+        if (!$this->userExists($username)) {
+            return self::NO_SUCH_USER;
+        }
+
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO {$this->remindersTable} (username, week_number, sent_at) VALUES (?, ?, ?)
+             ON CONFLICT (username, week_number) DO NOTHING"
+        );
+        $stmt->execute([$username, $week, $sentAt]);
+
+        return self::OK;
     }
 }

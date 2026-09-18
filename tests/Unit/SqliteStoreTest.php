@@ -358,4 +358,39 @@ final class SqliteStoreTest extends TestCase
         );
         $this->assertSame(PoolStore::OK, $store->savePick('joeg', 'Detroit Lions', 3), 'and new ones save');
     }
+
+    /*
+     * Reminders are recorded per player and week, so the hourly job can ask
+     * what it already did rather than mailing the pool again every hour.
+     */
+    public function testAReminderIsRecordedOncePerPlayerAndWeek(): void
+    {
+        $this->store->addUser('Alice', 'alice@example.com', 'alice', '1234');
+        $this->store->addUser('Bob', 'bob@example.com', 'bob', '1234');
+
+        $this->assertSame([], $this->store->remindersSent(2));
+
+        $this->assertSame(PoolStore::OK, $this->store->recordReminder('alice', 2, '2026-09-26T09:00:00+00:00'));
+        $this->assertSame(['alice'], $this->store->remindersSent(2));
+
+        /* Recording the same one again is not an error and adds nothing. */
+        $this->assertSame(PoolStore::OK, $this->store->recordReminder('alice', 2, '2026-09-26T10:00:00+00:00'));
+        $this->assertSame(['alice'], $this->store->remindersSent(2));
+
+        /* A different week is a different reminder. */
+        $this->store->recordReminder('alice', 3, '2026-10-03T09:00:00+00:00');
+        $this->assertSame(['alice'], $this->store->remindersSent(2));
+        $this->assertSame(['alice'], $this->store->remindersSent(3));
+
+        $this->store->recordReminder('bob', 2, '2026-09-26T09:00:00+00:00');
+        $this->assertEqualsCanonicalizing(['alice', 'bob'], $this->store->remindersSent(2));
+    }
+
+    public function testAReminderCannotBeRecordedForAStranger(): void
+    {
+        $this->assertSame(
+            PoolStore::NO_SUCH_USER,
+            $this->store->recordReminder('nobody', 2, '2026-09-26T09:00:00+00:00')
+        );
+    }
 }

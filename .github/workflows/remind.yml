@@ -1,0 +1,54 @@
+name: remind
+
+# Mails the players who have not picked, in the last 24 hours before the
+# deadline.
+#
+# Hourly on Saturdays rather than a single timed run, because the cron field is
+# UTC and the deadline is 11:59pm Central. America/Chicago is UTC-5 until 1
+# November 2026 and UTC-6 after it, so any fixed UTC hour is an hour wrong for
+# the back half of the season. bin/remind.php decides whether it is really the
+# window, in the pool's own timezone, and does nothing on the runs that are not.
+#
+# Sending twelve times is safe: every reminder is recorded per player and week,
+# and an already-reminded player is skipped.
+on:
+  schedule:
+    # Every hour on Saturday, UTC. The 05:00-06:00 UTC runs are Friday evening
+    # in Chicago and will report "not the send window"; that is the point.
+    - cron: '0 * * * 6'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List who would be mailed, send nothing'
+        type: boolean
+        default: true
+
+concurrency:
+  group: remind
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # The app scales to zero and `fly ssh console` cannot reach a stopped
+      # machine. Same reason as the backup job: without this, the run fails on
+      # any hour nobody happened to visit the site.
+      - name: Wake the machine
+        run: curl -sS --max-time 60 -o /dev/null https://loser-pool-2026.fly.dev/health.php
+
+      - name: Send reminders
+        run: |
+          FLAGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then FLAGS="--dry-run"; fi
+          flyctl ssh console --app loser-pool-2026 \
+            -C "php /var/www/bin/remind.php $FLAGS" | tee out.txt
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # This repository is public and these logs are public with it. The job
+      # prints usernames and counts; bin/remind.php never prints an address.
+      - name: Confirm it said something we recognise
+        run: grep -qE 'Not the send window|reminded|Nothing to (send|do|remind)|no pickable teams' out.txt
