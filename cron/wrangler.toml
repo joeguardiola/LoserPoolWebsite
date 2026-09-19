@@ -1,0 +1,25 @@
+# Starts the Saturday reminder at noon Central, on time.
+#
+# GitHub's own scheduler cannot do this. On 19 September 2026 the hourly
+# `remind` schedule ran at 11:10 and then not again until the reminder was
+# started by hand after one -- the noon and 1pm runs never happened at all.
+# GitHub documents scheduled runs as best-effort and drops them under load. A
+# workflow_dispatch, by contrast, started within seconds that same afternoon.
+# So this Worker keeps the clock and GitHub does the rest: all the sending logic
+# stays in bin/remind.php, and nothing on the site grows a new endpoint.
+#
+# Deployed by hand, once: see worker.js for the steps.
+
+name = "loser-pool-remind-cron"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+[triggers]
+# Cloudflare cron is UTC only. Noon Central is 17:00 UTC in daylight time and
+# 18:00 UTC in standard time, so both fire and bin/remind.php keeps whichever
+# is really noon: its window opens at noon local, so 17:00 UTC in November is
+# 11:00 CST and does nothing, and 18:00 UTC in September finds everyone
+# already reminded and does nothing. Days by name, not number: Cloudflare
+# numbers the week from Sunday = 1, unlike standard cron.
+crons = ["0 17 * * SAT", "0 18 * * SAT"]

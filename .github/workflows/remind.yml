@@ -3,6 +3,11 @@ name: remind
 # Mails the players who have not picked, in the last twelve hours before the
 # lock -- so the mail lands on Saturday afternoon rather than overnight.
 #
+# Started on time by a Cloudflare Worker (cron/), at noon Central on Saturday.
+# GitHub's own schedule below is best-effort -- on 19 September 2026 it skipped
+# both the noon and 1pm runs -- so it stays only as a fallback. Either trigger
+# is harmless if the other already ran: an already-reminded player is skipped.
+#
 # Hourly on Saturdays rather than a single timed run, because the cron field is
 # UTC and the deadline is 11:59pm Central. America/Chicago is UTC-5 until 1
 # November 2026 and UTC-6 after it, so any fixed UTC hour is an hour wrong for
@@ -54,3 +59,9 @@ jobs:
       # prints usernames and counts; bin/remind.php never prints an address.
       - name: Confirm it said something we recognise
         run: grep -qE 'Not the send window|reminded|Nothing to (send|do|remind)|no pickable teams' out.txt
+
+      # The run above can exit non-zero without failing the job (the pipe into
+      # tee hides it), so the one failure the commissioner would otherwise never
+      # hear about -- their own summary not arriving -- is checked by name.
+      - name: Confirm the commissioner got the list
+        run: "! grep -q 'Could not mail the commissioner' out.txt"
