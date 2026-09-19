@@ -101,4 +101,33 @@ final class Reminders
 
         return $due;
     }
+
+    /*
+     * The commissioner's copy of a run: who was mailed and who could not be.
+     *
+     * Only the usernames. The job's own output goes to public workflow logs,
+     * and this is the one place the commissioner can see the list without
+     * reading them -- or reaching into the container.
+     *
+     * @param string[] $sent
+     * @param string[] $failed
+     * @return array{0:string,1:string} subject and body
+     */
+    public static function summary(int $week, array $sent, array $failed): array
+    {
+        $subject = "Loser Pool week $week: reminded " . count($sent)
+            . ($failed === [] ? '' : ', ' . count($failed) . ' failed');
+
+        $body = "Week $week pick reminders.\n\n"
+            . 'Reminded (' . count($sent) . "):\n"
+            . ($sent === [] ? "  nobody\n" : '  ' . implode("\n  ", $sent) . "\n");
+
+        if ($failed !== []) {
+            $body .= "\nCould not be reminded (" . count($failed) . "):\n"
+                . '  ' . implode("\n  ", $failed) . "\n"
+                . "\nThe workflow log says why.\n";
+        }
+
+        return [$subject, $body];
+    }
 }

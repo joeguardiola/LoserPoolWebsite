@@ -145,4 +145,21 @@ final class RemindersTest extends TestCase
 
         $this->assertSame([], Reminders::due($standings, [], 2, ['alice']));
     }
+
+    public function testTheCommissionerSummaryListsWhoWasMailed(): void
+    {
+        [$subject, $body] = Reminders::summary(2, ['alice', 'bob'], []);
+
+        $this->assertSame('Loser Pool week 2: reminded 2', $subject);
+        $this->assertStringContainsString("Reminded (2):\n  alice\n  bob\n", $body);
+        $this->assertStringNotContainsString('Could not', $body);
+    }
+
+    public function testTheCommissionerSummaryNamesFailures(): void
+    {
+        [$subject, $body] = Reminders::summary(2, ['alice'], ['carol']);
+
+        $this->assertSame('Loser Pool week 2: reminded 1, 1 failed', $subject);
+        $this->assertStringContainsString("Could not be reminded (1):\n  carol\n", $body);
+    }
 }

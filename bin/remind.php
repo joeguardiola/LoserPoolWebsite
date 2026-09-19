@@ -16,6 +16,10 @@
  *     php bin/remind.php              # send, if this is the window
  *     php bin/remind.php --dry-run    # print who would be mailed, send nothing
  *     php bin/remind.php --force      # ignore the window, still skip the sent
+ *
+ * When LP_COMMISSIONER_EMAIL is set, a run that mails anyone also mails the
+ * commissioner the list. It is a Fly secret, not a constant here, because this
+ * repository is public.
  */
 
 require_once __DIR__ . '/../src/week_manager.php';
@@ -93,8 +97,8 @@ if ($mailer === null) {
     exit(1);
 }
 
-$sent = 0;
-$failed = 0;
+$sent = [];
+$failed = [];
 
 foreach ($due as $username) {
     $address = $store->emailFor($username);
@@ -105,7 +109,7 @@ foreach ($due as $username) {
          * other forty reminders.
          */
         fwrite(STDERR, "No address for $username\n");
-        $failed++;
+        $failed[] = $username;
         continue;
     }
 
@@ -129,7 +133,7 @@ foreach ($due as $username) {
          * runs this job prints its output into a public repository's logs.
          */
         fwrite(STDERR, "Failed for $username: " . (string) $mailer->lastError() . "\n");
-        $failed++;
+        $failed[] = $username;
         continue;
     }
 
@@ -137,8 +141,25 @@ foreach ($due as $username) {
         fwrite(STDERR, "Sent to $username but could not record it\n");
     }
 
-    $sent++;
+    $sent[] = $username;
 }
 
-echo "Week $week: $sent reminded, $failed failed.\n";
-exit($failed > 0 ? 1 : 0);
+echo "Week $week: " . count($sent) . " reminded, " . count($failed) . " failed.\n";
+
+$summaryFailed = false;
+$commissioner = getenv('LP_COMMISSIONER_EMAIL');
+if (is_string($commissioner) && $commissioner !== '') {
+    [$subject, $body] = Reminders::summary($week, $sent, $failed);
+    if ($mailer->send($commissioner, $subject, $body)) {
+        echo "Sent the list to the commissioner.\n";
+    } else {
+        /*
+         * On stdout, not stderr: the workflow only captures stdout, and fails
+         * the job on this line so GitHub mails about it instead.
+         */
+        echo "Could not mail the commissioner: " . (string) $mailer->lastError() . "\n";
+        $summaryFailed = true;
+    }
+}
+
+exit($failed !== [] || $summaryFailed ? 1 : 0);
