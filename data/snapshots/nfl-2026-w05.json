@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-09-22T17:36:18+00:00",
+    "generated_at": "2026-09-29T18:33:49+00:00",
     "season": {
         "type": 2,
         "year": 2026
@@ -110,6 +110,36 @@
                         {
                             "team": {
                                 "displayName": "Philadelphia Eagles"
+                            },
+                            "winner": null,
+                            "score": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "401872990",
+            "date": "2026-10-11T17:00Z",
+            "competitions": [
+                {
+                    "status": {
+                        "type": {
+                            "name": "STATUS_SCHEDULED",
+                            "completed": false
+                        }
+                    },
+                    "competitors": [
+                        {
+                            "team": {
+                                "displayName": "Green Bay Packers"
+                            },
+                            "winner": null,
+                            "score": "0"
+                        },
+                        {
+                            "team": {
+                                "displayName": "Chicago Bears"
                             },
                             "winner": null,
                             "score": "0"
@@ -350,36 +380,6 @@
                         {
                             "team": {
                                 "displayName": "Denver Broncos"
-                            },
-                            "winner": null,
-                            "score": "0"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "401872990",
-            "date": "2026-10-11T20:25Z",
-            "competitions": [
-                {
-                    "status": {
-                        "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
-                        }
-                    },
-                    "competitors": [
-                        {
-                            "team": {
-                                "displayName": "Green Bay Packers"
-                            },
-                            "winner": null,
-                            "score": "0"
-                        },
-                        {
-                            "team": {
-                                "displayName": "Chicago Bears"
                             },
                             "winner": null,
                             "score": "0"
