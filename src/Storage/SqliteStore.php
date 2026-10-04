@@ -322,8 +322,20 @@ final class SqliteStore implements PoolStore
 
     public function allPicks(): array
     {
+        /*
+         * Keyed by the registered spelling, not whatever a pick row holds.
+         * Usernames match without regard to case, so a pick written as
+         * "commish_2" belongs to "Commish_2" -- and grouping on the raw
+         * string split that player into two rows, one of them with no pick for
+         * the week. The left join keeps a pick whose user is somehow missing
+         * rather than hiding it.
+         */
         $rows = $this->pdo
-            ->query("SELECT username, week_number, pick FROM {$this->picksTable}")
+            ->query(
+                "SELECT COALESCE(u.username, p.username) AS username, p.week_number, p.pick
+                 FROM {$this->picksTable} p
+                 LEFT JOIN {$this->userTable} u ON u.username = p.username"
+            )
             ->fetchAll(PDO::FETCH_ASSOC);
 
         $picks = [];
@@ -335,9 +347,14 @@ final class SqliteStore implements PoolStore
 
     public function savePick(string $username, string $team, int $week): int
     {
-        if (!$this->userExists($username)) {
+        /* Stored under the registered spelling; see allPicks(). */
+        $stmt = $this->pdo->prepare("SELECT username FROM {$this->userTable} WHERE username = ?");
+        $stmt->execute([$username]);
+        $registered = $stmt->fetchColumn();
+        if ($registered === false) {
             return self::NO_SUCH_USER;
         }
+        $username = (string) $registered;
 
         try {
             /*

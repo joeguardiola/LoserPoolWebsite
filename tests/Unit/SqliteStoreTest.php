@@ -194,6 +194,56 @@ final class SqliteStoreTest extends TestCase
         ], $this->store->allPicks());
     }
 
+    /*
+     * A name typed in a different case is the same player, and must be listed
+     * as one. Grouping on the raw string once split a player into two rows,
+     * leaving the real one with no pick for the week.
+     */
+    public function testAPickTypedInAnotherCaseIsListedUnderTheRegisteredName(): void
+    {
+        $this->register('Commish_2');
+        $this->store->savePick('Commish_2', 'Houston Texans', 1);
+        $this->store->savePick('commish_2', 'Miami Dolphins', 4);
+
+        $this->assertSame(
+            ['Commish_2' => [1 => 'Houston Texans', 4 => 'Miami Dolphins']],
+            $this->store->allPicks()
+        );
+    }
+
+    /* The row itself, not just the listing, so the spelling is right at rest. */
+    public function testAPickIsStoredUnderTheRegisteredName(): void
+    {
+        $this->register('Commish_2');
+        $this->store->savePick('commish_2', 'Miami Dolphins', 4);
+
+        $reflection = new \ReflectionProperty(SqliteStore::class, 'pdo');
+        $reflection->setAccessible(true);
+        $stored = $reflection->getValue($this->store)
+            ->query('SELECT username FROM Picks_26 WHERE week_number = 4')
+            ->fetchColumn();
+
+        $this->assertSame('Commish_2', $stored);
+    }
+
+    /* Rows written before the fix still hold the spelling that was typed. */
+    public function testAnExistingPickRowInAnotherCaseIsListedUnderTheRegisteredName(): void
+    {
+        $this->register('Commish_2');
+        $this->store->savePick('Commish_2', 'Houston Texans', 1);
+
+        $reflection = new \ReflectionProperty(SqliteStore::class, 'pdo');
+        $reflection->setAccessible(true);
+        $reflection->getValue($this->store)->exec(
+            "INSERT INTO Picks_26 (username, week_number, pick) VALUES ('commish_2', 4, 'Miami Dolphins')"
+        );
+
+        $this->assertSame(
+            ['Commish_2' => [1 => 'Houston Texans', 4 => 'Miami Dolphins']],
+            $this->store->allPicks()
+        );
+    }
+
     public function testANewPlayerHasNoPicks(): void
     {
         $this->register('newcomer');
