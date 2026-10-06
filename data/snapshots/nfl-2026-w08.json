@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-09-29T18:33:50+00:00",
+    "generated_at": "2026-10-06T18:52:19+00:00",
     "season": {
         "type": 2,
         "year": 2026
@@ -29,7 +29,8 @@
                         "isPremium": false
                     }
                 ],
-                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/no.png"
+                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/no.png",
+                "logoDark": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/no.png"
             },
             {
                 "id": "19",
@@ -53,7 +54,8 @@
                         "isPremium": false
                     }
                 ],
-                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/nyg.png"
+                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/nyg.png",
+                "logoDark": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/nyg.png"
             },
             {
                 "id": "25",
@@ -77,7 +79,8 @@
                         "isPremium": false
                     }
                 ],
-                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/sf.png"
+                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/sf.png",
+                "logoDark": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/sf.png"
             },
             {
                 "id": "34",
@@ -101,7 +104,8 @@
                         "isPremium": false
                     }
                 ],
-                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/hou.png"
+                "logo": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/hou.png",
+                "logoDark": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/hou.png"
             }
         ]
     },
