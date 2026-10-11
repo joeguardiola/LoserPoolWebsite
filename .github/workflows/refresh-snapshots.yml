@@ -14,6 +14,8 @@ on:
 
 permissions:
   contents: write
+  # To start the deploy; see the last step.
+  actions: write
 
 concurrency:
   group: refresh-snapshots
@@ -37,6 +39,7 @@ jobs:
       # Nothing changes most weeks, and an empty commit every Tuesday would
       # bury the real history and trigger a pointless deploy each time.
       - name: Commit only if the schedule actually moved
+        id: commit
         run: |
           # Every run rewrites generated_at, so a plain diff is always dirty.
           # Only a change to the schedule itself is worth a commit -- otherwise
@@ -66,3 +69,16 @@ jobs:
           flexed, so the committed offline fallback drifts from the real
           schedule if it is left alone."
           git push
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # A push made with this workflow's own token does not trigger other
+      # workflows, so deploy.yml never saw these commits: the refreshed
+      # snapshots sat in the repository and the live site kept serving the old
+      # ones until /health.php reported them stale. workflow_dispatch is the
+      # one event this token is allowed to start, so ask for the deploy
+      # explicitly. It still runs the test gate first.
+      - name: Deploy the refreshed snapshots
+        if: steps.commit.outputs.pushed == 'true'
+        run: gh workflow run deploy.yml --ref master
+        env:
+          GH_TOKEN: ${{ github.token }}
