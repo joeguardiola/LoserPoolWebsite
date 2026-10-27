@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-10-20T17:53:27+00:00",
+    "generated_at": "2026-10-27T18:38:23+00:00",
     "season": {
         "type": 2,
         "year": 2026
@@ -361,36 +361,6 @@
             ]
         },
         {
-            "id": "401873047",
-            "date": "2026-11-08T21:05Z",
-            "competitions": [
-                {
-                    "status": {
-                        "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
-                        }
-                    },
-                    "competitors": [
-                        {
-                            "team": {
-                                "displayName": "San Francisco 49ers"
-                            },
-                            "winner": null,
-                            "score": "0"
-                        },
-                        {
-                            "team": {
-                                "displayName": "Las Vegas Raiders"
-                            },
-                            "winner": null,
-                            "score": "0"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
             "id": "401873049",
             "date": "2026-11-08T21:25Z",
             "competitions": [
@@ -412,6 +382,36 @@
                         {
                             "team": {
                                 "displayName": "Green Bay Packers"
+                            },
+                            "winner": null,
+                            "score": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "401873047",
+            "date": "2026-11-08T21:25Z",
+            "competitions": [
+                {
+                    "status": {
+                        "type": {
+                            "name": "STATUS_SCHEDULED",
+                            "completed": false
+                        }
+                    },
+                    "competitors": [
+                        {
+                            "team": {
+                                "displayName": "San Francisco 49ers"
+                            },
+                            "winner": null,
+                            "score": "0"
+                        },
+                        {
+                            "team": {
+                                "displayName": "Las Vegas Raiders"
                             },
                             "winner": null,
                             "score": "0"
