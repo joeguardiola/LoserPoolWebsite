@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-11-10T20:24:17+00:00",
+    "generated_at": "2026-11-17T21:39:25+00:00",
     "season": {
         "type": 2,
         "year": 2026
@@ -189,36 +189,6 @@
             ]
         },
         {
-            "id": "401873086",
-            "date": "2026-11-29T18:00Z",
-            "competitions": [
-                {
-                    "status": {
-                        "type": {
-                            "name": "STATUS_SCHEDULED",
-                            "completed": false
-                        }
-                    },
-                    "competitors": [
-                        {
-                            "team": {
-                                "displayName": "Cleveland Browns"
-                            },
-                            "winner": null,
-                            "score": "0"
-                        },
-                        {
-                            "team": {
-                                "displayName": "Las Vegas Raiders"
-                            },
-                            "winner": null,
-                            "score": "0"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
             "id": "401873088",
             "date": "2026-11-29T18:00Z",
             "competitions": [
@@ -309,6 +279,36 @@
             ]
         },
         {
+            "id": "401873090",
+            "date": "2026-11-29T18:00Z",
+            "competitions": [
+                {
+                    "status": {
+                        "type": {
+                            "name": "STATUS_SCHEDULED",
+                            "completed": false
+                        }
+                    },
+                    "competitors": [
+                        {
+                            "team": {
+                                "displayName": "Jacksonville Jaguars"
+                            },
+                            "winner": null,
+                            "score": "0"
+                        },
+                        {
+                            "team": {
+                                "displayName": "Tennessee Titans"
+                            },
+                            "winner": null,
+                            "score": "0"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "id": "401873085",
             "date": "2026-11-29T18:00Z",
             "competitions": [
@@ -339,7 +339,7 @@
             ]
         },
         {
-            "id": "401873090",
+            "id": "401873093",
             "date": "2026-11-29T21:05Z",
             "competitions": [
                 {
@@ -352,14 +352,14 @@
                     "competitors": [
                         {
                             "team": {
-                                "displayName": "Jacksonville Jaguars"
+                                "displayName": "Los Angeles Chargers"
                             },
                             "winner": null,
                             "score": "0"
                         },
                         {
                             "team": {
-                                "displayName": "Tennessee Titans"
+                                "displayName": "New England Patriots"
                             },
                             "winner": null,
                             "score": "0"
@@ -429,7 +429,7 @@
             ]
         },
         {
-            "id": "401873093",
+            "id": "401873086",
             "date": "2026-11-30T01:20Z",
             "competitions": [
                 {
@@ -442,14 +442,14 @@
                     "competitors": [
                         {
                             "team": {
-                                "displayName": "Los Angeles Chargers"
+                                "displayName": "Cleveland Browns"
                             },
                             "winner": null,
                             "score": "0"
                         },
                         {
                             "team": {
-                                "displayName": "New England Patriots"
+                                "displayName": "Las Vegas Raiders"
                             },
                             "winner": null,
                             "score": "0"
